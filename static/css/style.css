@@ -11,12 +11,18 @@ body {
     min-height: 100vh;
 }
 
+html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
 .dashboard-container {
     display: flex;
     min-height: 100vh;
     background-color: #edf7ee;
     position: relative;
     width: 100%;
+    overflow-x: hidden;
 }
 
 .sidebar {
@@ -111,6 +117,7 @@ body {
     gap: 24px;
     width: calc(100% - 280px);
     min-width: 0; 
+    overflow-x: hidden;
 }
 
 .main-content.expanded {

@@ -1,0 +1,61 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}GassWatt{% endblock title %}</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    {% block meta %}{% endblock meta %}
+</head>
+
+<body>
+    {% with current=request.resolver_match.url_name %}
+    <header class="site-header">
+        <div class="container">
+            <div class="header-inner">
+                <a href="{% url 'main:show_home' %}" class="brand">
+                    <img class="brand-icon" src="{% static 'img/logo.png' %}" alt="">
+                    <span class="brand-name">GassWatt</span>
+                </a>
+
+                <nav class="nav">
+                    <a href="{% url 'main:show_home' %}"
+                       class="nav-link {% if current == 'show_home' %}active{% endif %}">Home</a>
+                    <a 
+                       class="nav-link {% if current == 'show_about' %}active{% endif %}">About</a>
+                    <a 
+                       class="nav-link {% if current == 'show_faq' %}active{% endif %}">FAQ</a>
+                    <a 
+                       class="nav-link {% if current == 'show_contact' %}active{% endif %}">Contact</a>
+                </nav>
+
+                <div class="header-actions">
+                    <span class="language">EN</span>
+                        <span class="nav-user">{{ user.username }}</span>
+                        <a class="btn btn-outline">Logout</a>
+                        <a class="btn btn-outline">Sign In</a>
+                        <a class="btn btn-solid">Sign Up</a>
+                </div>
+            </div>
+        </div>
+    </header>
+    {% endwith %}
+
+    {% block content %}{% endblock content %}
+
+    <footer class="site-footer">
+        <div class="container">
+            <div class="footer-tagline">
+                <img class="sprout" src="{% static 'img/home_4.png' %}" alt="">
+                <p>Mulai dari kebiasaan kecil untuk dampak besar</p>
+                <img class="sprout" src="{% static 'img/home_4.png' %}" alt="">
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

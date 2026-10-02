@@ -246,3 +246,331 @@ html, body {
         padding: 24px 20px;
     }
 }
+/* =========================================================
+   GassWatt - style.css
+   Urutan: 1 Variables · 2 Base · 3 Layout · 4 Components
+           5 Header · 6 Footer · 7 Home page · 8 Responsive
+   ========================================================= */
+
+/* ---------- 1. VARIABLES ---------- */
+:root {
+    --green-900: #0e3d2a;
+    --green-700: #0b6b43;
+    --green-600: #1a8a5a;
+    --green-500: #00b300;
+    --green-100: #d9f0d4;
+    --orange: #f4a261;
+    --glass: rgba(255, 255, 255, 0.65);
+    --font-main: "Plus Jakarta Sans", "Poppins", Arial, sans-serif;
+}
+
+/* ---------- 2. BASE ---------- */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: var(--font-main);
+    color: #111;
+    background:
+        radial-gradient(ellipse 45% 40% at 100% 0%, #a3d94c 0%, rgba(163, 217, 76, 0) 100%),
+        radial-gradient(ellipse 40% 45% at 12% 52%, #a6dba0 0%, rgba(166, 219, 160, 0) 100%),
+        linear-gradient(135deg, #e9f7e4 0%, #f7fcf5 45%, #eef9e6 100%);
+    background-attachment: fixed;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+img {
+    max-width: 100%;
+}
+
+/* ---------- 3. LAYOUT ---------- */
+.container {
+    width: 100%;
+    max-width: 1100px;
+    margin-inline: auto;
+    padding-inline: 24px;
+}
+
+/* ---------- 4. COMPONENTS (dipakai ulang di semua halaman) ---------- */
+.btn {
+    padding: 6px 16px;
+    border: 1.5px solid var(--green-600);
+    border-radius: 999px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.btn-outline {
+    color: var(--green-600);
+    background: #fff;
+}
+
+.btn-solid {
+    color: #fff;
+    background: var(--green-600);
+}
+
+.btn-cta {
+    display: inline-block;
+    padding: 9px 20px;
+    border-radius: 999px;
+    font-size: 16px;
+    color: #12361f;
+    background: var(--green-500);
+    transition: filter 0.2s;
+}
+
+.btn-cta:hover {
+    filter: brightness(1.08);
+}
+
+.section-title {
+    margin: 0 0 8px;
+    font-size: 20px;
+    font-weight: 700;
+    text-align: center;
+    color: #000;
+}
+
+.section-title span {
+    padding-bottom: 2px;
+    color: var(--green-600);
+    border-bottom: 2px solid var(--green-600);
+}
+
+/* ---------- 5. HEADER (base.html) ---------- */
+.site-header {
+    padding-top: 24px;
+}
+
+.header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 14px 28px;
+    border-radius: 999px;
+    background: var(--glass);
+    backdrop-filter: blur(6px);
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.brand-icon {
+    width: 18px;
+    height: 18px;
+}
+
+.brand-name {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--green-600);
+}
+
+.nav {
+    display: flex;
+    align-items: center;
+    gap: 44px;
+}
+
+.nav-link {
+    padding-bottom: 2px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #5b7d6c;
+    border-bottom: 2px solid transparent;
+}
+
+.nav-link:hover {
+    color: var(--green-600);
+}
+
+.nav-link.active {
+    font-size: 17px;
+    color: var(--green-600);
+    border-bottom-color: var(--green-600);
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.language,
+.nav-user {
+    margin-right: 4px;
+    font-size: 15px;
+    color: #5b7d6c;
+}
+
+/* ---------- 6. FOOTER (base.html) ---------- */
+.site-footer {
+    padding: 20px 0 28px;
+}
+
+.footer-tagline {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+}
+
+.footer-tagline p {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--orange);
+}
+
+.sprout {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+}
+
+/* ---------- 7. HOME PAGE ---------- */
+/* Hero */
+.hero {
+    padding-top: 24px;
+}
+
+.hero-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    align-items: center;
+    gap: 32px;
+}
+
+.hero-kicker {
+    margin: 0 0 20px;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--green-600);
+}
+
+.hero-text h1 {
+    margin: 0 0 18px;
+    max-width: 440px;
+    font-size: clamp(36px, 5vw, 50px);
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -0.5px;
+    color: var(--green-900);
+}
+
+.hero-description {
+    margin: 0 0 24px;
+    max-width: 500px;
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.55;
+    color: var(--green-700);
+}
+
+.hero-visual {
+    display: flex;
+    justify-content: center;
+}
+
+.hero-visual img {
+    display: block;
+    width: 100%;
+    max-width: 420px;
+    height: auto;
+}
+
+/* Features */
+.features {
+    padding-top: 8px;
+}
+
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    padding: 28px 24px 30px;
+    border-radius: 36px;
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.feature-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.feature-icon {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    margin-bottom: 14px;
+    border-radius: 50%;
+    background: var(--green-100);
+}
+
+.feature-icon img {
+    width: 26px;
+    height: 26px;
+}
+
+.feature-card h3 {
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #000;
+}
+
+.feature-card p {
+    margin: 0;
+    max-width: 240px;
+    font-size: 16px;
+    line-height: 1.4;
+}
+
+/* ---------- 8. RESPONSIVE ---------- */
+@media (max-width: 900px) {
+    .header-inner {
+        flex-wrap: wrap;
+        justify-content: center;
+        border-radius: 28px;
+    }
+
+    .nav {
+        gap: 24px;
+    }
+
+    .hero-grid {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+
+    .hero-text h1,
+    .hero-description {
+        margin-inline: auto;
+    }
+
+    .feature-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .footer-tagline {
+        gap: 12px;
+        text-align: center;
+    }
+}

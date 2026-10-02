@@ -1,0 +1,57 @@
+{% extends 'homepage-base.html' %}
+{% load static %}
+{% block title %}GassWatt - Home{% endblock title %}
+{% block content %}
+<main>
+    <section class="hero" id="home">
+        <div class="container hero-grid">
+            <div class="hero-text">
+                <p class="hero-kicker">Protect our planet, for a Better Tomorrow</p>
+                <h1>Track Your Energy, Reduce Your Impact</h1>
+                <p class="hero-description">
+                    Evaluasi jejak karbon dari kebiasaan sehari hari, dapatkan
+                    rekomendasi pintar, dan bentuk kebiasaan hemat energi
+                    bersama GassWatt
+                </p>
+                <a class="btn-cta">Mulai Sekarang</a>
+            </div>
+
+            <div class="hero-visual">
+                <img src="{% static 'img/bumi.png' %}"
+                     alt="Ilustrasi bumi hijau dengan panel surya dan turbin angin">
+            </div>
+        </div>
+    </section>
+    <section class="features" id="features">
+        <div class="container">
+            <h2 class="section-title">Kenapa <span>GassWatt?</span></h2>
+
+            <div class="feature-grid">
+                <article class="feature-card">
+                    <div class="feature-icon">
+                        <img src="{% static 'img/home_1.png' %}" alt="">
+                    </div>
+                    <h3>Pantau Emisi Karbon</h3>
+                    <p>Catat Kebiasaan harianmu<br>dan lihat estimasi emisinya.</p>
+                </article>
+
+                <article class="feature-card">
+                    <div class="feature-icon">
+                        <img src="{% static 'img/home_2.png' %}" alt="">
+                    </div>
+                    <h3>Rekomendasi Berdasarkan Cuaca</h3>
+                    <p>Dapatkan saran yang sesuai dengan kondisi lingkunganmu.</p>
+                </article>
+
+                <article class="feature-card">
+                    <div class="feature-icon">
+                        <img src="{% static 'img/home_3.png' %}" alt="">
+                    </div>
+                    <h3>Lacak Progress</h3>
+                    <p>Lihat riwayat dan grafik perubahan jejak karbonmu.</p>
+                </article>
+            </div>
+        </div>
+    </section>
+</main>
+{% endblock content %}

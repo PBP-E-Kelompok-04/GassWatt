@@ -28,3 +28,7 @@ Role Pengguna
 Admin: Menghapus User, Edit FAQ, Melihat Statistik dan tren website, Akses Admin Portal
 User: Dapat melengkapi profil, mengisi survey kebiasaan sehari-hari, mencatat penggunaan perangkat dan aktivitas, melihat estimasi jejak karbon, melihat riwayat dan grafik, serta memperoleh rekomendasi berdasarkan hasil evaluasi dan kondisi cuaca.
 Non-Login User: Dapat melihat homepage, informasi mengenai GassWatt, edukasi mengenai gaya hidup ramah lingkungan, serta informasi umum mengenai platform.
+
+
+Link Desain Figma: https://www.figma.com/design/smLsJmdd3R4Z5DMCoHq1xS/GassWatt?node-id=0-1&t=TZGIqgrjTskNhzp8-1
+Link Websitw GassWatt: https://arya-dwipa-gasswatt.pws.cs.ui.ac.id/

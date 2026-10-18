@@ -1,0 +1,44 @@
+{% extends 'homepage-base.html' %}
+
+{% block title %}GassWatt - FAQ{% endblock title %}
+
+{% block content %}
+
+<main>
+    <section class="faq-section" id="faq">
+        <div class="container">
+
+            <div class="faq-header">
+                <h1>FAQ</h1>
+                <p>Frequently Asked Questions</p>
+            </div>
+
+            <div class="faq-list">
+
+                {% for faq in faq_list %}
+                    <article class="faq-item">
+                        <details>
+                            <summary>
+                                <span>{{ faq.question }}</span>
+                                <span class="faq-icon" aria-hidden="true">
+                                </span>
+                            </summary>
+
+                            <div class="faq-answer">
+                                <p>{{ faq.answer }}</p>
+                            </div>
+                        </details>
+                    </article>
+                {% empty %}
+                    <p class="faq-empty">
+                        Belum ada FAQ yang tersedia.
+                    </p>
+                {% endfor %}
+
+            </div>
+
+        </div>
+    </section>
+</main>
+
+{% endblock content %}

@@ -4,7 +4,6 @@
     padding: 0;
     font-family: "Poppins", sans-serif;
 }
-
 body {
     background-color: #edf7ee;
     color: #1a1a1a;
@@ -222,37 +221,6 @@ html, body {
     position: relative;
 }
 
-@media (max-width: 900px) {
-    .sidebar {
-        width: 80px; 
-        padding: 24px 12px;
-        align-items: center;
-    }
-
-    .brand-name, 
-    .nav-item span {
-        display: none; 
-    }
-
-    .nav-item {
-        justify-content: center;
-        padding: 12px;
-        border-radius: 50%;
-    }
-
-    .main-content {
-        margin-left: 80px;
-        width: calc(100% - 80px);
-        padding: 24px 20px;
-    }
-}
-/* =========================================================
-   GassWatt - style.css
-   Urutan: 1 Variables · 2 Base · 3 Layout · 4 Components
-           5 Header · 6 Footer · 7 Home page · 8 Responsive
-   ========================================================= */
-
-/* ---------- 1. VARIABLES ---------- */
 :root {
     --green-900: #0e3d2a;
     --green-700: #0b6b43;
@@ -261,10 +229,13 @@ html, body {
     --green-100: #d9f0d4;
     --orange: #f4a261;
     --glass: rgba(255, 255, 255, 0.65);
+    --page-glow: 
+        radial-gradient(ellipse 45% 40% at 100% 0%, #a3d94c 0%, rgba(163, 217, 76, 0) 100%),
+        radial-gradient(ellipse 40% 45% at 12% 52%, #a6dba0 0%, rgba(166, 219, 160, 0) 100%);
     --font-main: "Plus Jakarta Sans", "Poppins", Arial, sans-serif;
 }
 
-/* ---------- 2. BASE ---------- */
+/*  BASE  */
 *,
 *::before,
 *::after {
@@ -277,8 +248,7 @@ body {
     font-family: var(--font-main);
     color: #111;
     background:
-        radial-gradient(ellipse 45% 40% at 100% 0%, #a3d94c 0%, rgba(163, 217, 76, 0) 100%),
-        radial-gradient(ellipse 40% 45% at 12% 52%, #a6dba0 0%, rgba(166, 219, 160, 0) 100%),
+        var(--page-glow),
         linear-gradient(135deg, #e9f7e4 0%, #f7fcf5 45%, #eef9e6 100%);
     background-attachment: fixed;
 }
@@ -292,7 +262,6 @@ img {
     max-width: 100%;
 }
 
-/* ---------- 3. LAYOUT ---------- */
 .container {
     width: 100%;
     max-width: 1100px;
@@ -300,7 +269,7 @@ img {
     padding-inline: 24px;
 }
 
-/* ---------- 4. COMPONENTS (dipakai ulang di semua halaman) ---------- */
+/* ---------- COMPONENTS (dipakai ulang di semua halaman) ---------- */
 .btn {
     padding: 6px 16px;
     border: 1.5px solid var(--green-600);
@@ -417,7 +386,7 @@ img {
     color: #5b7d6c;
 }
 
-/* ---------- 6. FOOTER (base.html) ---------- */
+/* ---------- FOOTER (base.html) ---------- */
 .site-footer {
     padding: 20px 0 28px;
 }
@@ -442,8 +411,8 @@ img {
     object-fit: contain;
 }
 
-/* ---------- 7. HOME PAGE ---------- */
-/* Hero */
+/* ---------- HOME PAGE ---------- */
+
 .hero {
     padding-top: 24px;
 }
@@ -493,7 +462,6 @@ img {
     height: auto;
 }
 
-/* Features */
 .features {
     padding-top: 8px;
 }
@@ -641,7 +609,131 @@ img {
     color: #5b7d6c;
 }
 
+body.page-about {   
+    background-image: var(--page-glow), var(--about-bg);
+    background-size: cover;
+    background-position: center top;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+
+.about-hero {
+    padding: 28px 0 32px;
+}
+ 
+.about-kicker {
+    margin: 0 0 8px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #0a7a14;
+}
+ 
+.about-title {
+    margin: 0 0 20px;
+    max-width: 9em;
+    font-size: clamp(40px, 5vw, 60px);
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -0.5px;
+    color: var(--green-900);
+}
+ 
+.about-description {
+    max-width: 48em;
+    margin-bottom: 28px;
+    font-size: 16px;
+}
+ 
+.about-description p {
+    margin: 0 0 20px;
+    font-size: 1em;
+    font-weight: 700;
+    line-height: 1.5;
+    color: #fff;
+}
+ 
+.about-description .highlight {
+    color: #0a7a14;
+}
+ 
+.about-cards {
+    display: grid;
+    grid-template-columns: 1fr 1.7fr;
+    gap: 48px;
+    width: 94%;
+    margin-inline: auto;
+}
+ 
+.about-card {
+    padding: 14px 20px 18px;
+    border-radius: 14px;
+    color: #fff;
+    background: rgba(40, 60, 45, 0.55);
+    backdrop-filter: blur(4px);
+}
+ 
+.about-card-header {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 6px;
+}
+ 
+.about-card-header h2 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+}
+ 
+.about-card-icon {
+    position: absolute;
+    left: 0;
+    width: 22px;
+    height: 22px;
+    color: #19c37d;
+}
+ 
+.about-card p,
+.about-card li {
+    font-size: 15px;
+    line-height: 1.5;
+}
+ 
+.about-card-vision p {
+    margin: 0;
+    text-align: center;
+}
+ 
+.about-card-mission ol {
+    margin: 0;
+    padding-left: 20px;
+}
+
 @media (max-width: 900px) {
+    .sidebar {
+        width: 80px; 
+        padding: 24px 12px;
+        align-items: center;
+    }
+
+    .brand-name, 
+    .nav-item span {
+        display: none; 
+    }
+
+    .nav-item {
+        justify-content: center;
+        padding: 12px;
+        border-radius: 50%;
+    }
+
+    .main-content {
+        margin-left: 80px;
+        width: calc(100% - 80px);
+        padding: 24px 20px;
+    }
+
     .header-inner {
         flex-wrap: wrap;
         justify-content: center;
@@ -685,5 +777,9 @@ img {
 
     .faq-item summary {
         font-size: 13px;
+    }
+
+    .about-cards {
+        grid-template-columns: 1fr;
     }
 }

@@ -10,6 +10,8 @@ from main.views import(
     edit_transport_survey,
     delete_transport_survey,
     emission_dashboard,
+    show_faq,
+    show_about,
 )
 
 app_name = "main"
@@ -25,4 +27,6 @@ urlpatterns = [
     path('dashboard/emission/', emission_dashboard, name='emission_dashboard'),
     path("dashboard/weather/", show_dashboard_weather, name="show_dashboard_weather"),
     # path("dashboard/emission/", show_dashboard_emission, name="show_dashboard_emission"),
+    path("faq/", show_faq, name="show_faq"),
+    path("about/", show_about, name="show_about"),
 ]

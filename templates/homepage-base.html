@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %}GassWatt{% endblock title %}</title>
-
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -13,7 +13,7 @@
     {% block meta %}{% endblock meta %}
 </head>
 
-<body>
+<body class="{% block body_class %}{% endblock body_class %}">
     {% with current=request.resolver_match.url_name %}
     <header class="site-header">
         <div class="container">
@@ -26,9 +26,9 @@
                 <nav class="nav">
                     <a href="{% url 'main:show_home' %}"
                        class="nav-link {% if current == 'show_home' %}active{% endif %}">Home</a>
-                    <a 
+                    <a href="{% url 'main:show_about' %}"
                        class="nav-link {% if current == 'show_about' %}active{% endif %}">About</a>
-                    <a 
+                    <a href="{% url 'main:show_faq' %}"
                        class="nav-link {% if current == 'show_faq' %}active{% endif %}">FAQ</a>
                     <a 
                        class="nav-link {% if current == 'show_contact' %}active{% endif %}">Contact</a>

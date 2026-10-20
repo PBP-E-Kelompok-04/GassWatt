@@ -5,6 +5,229 @@
    ========================================================= */
 
 /* ---------- 1. VARIABLES ---------- */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: "Poppins", sans-serif;
+}
+body {
+    background-color: #edf7ee;
+    color: #1a1a1a;
+    min-height: 100vh;
+}
+
+html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+.dashboard-container {
+    display: flex;
+    min-height: 100vh;
+    background-color: #edf7ee;
+    position: relative;
+    width: 100%;
+    overflow-x: hidden;
+}
+
+.sidebar {
+    width: 280px;
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(20px);
+    border-right: 1px solid #d8e8dd;
+    padding: 32px 24px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    overflow-y: auto;
+}
+
+.sidebar.collapsed {
+    display: none;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.brand-logo {
+    width: 36px;
+    height: 36px;
+}
+
+.brand-name {
+    font-size: 24px;
+    font-weight: 700;
+    color: #16895d;
+}
+
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 20px;
+    border-radius: 50px;
+    text-decoration: none;
+    color: #4a5568;
+    font-weight: 600;
+    font-size: 16px;
+    transition: all 0.25s ease;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    width: 100%;
+}
+
+.nav-item img {
+    width: 24px;
+    height: 24px;
+    transition: transform 0.2s ease;
+}
+
+.nav-item:hover {
+    background-color: rgba(22, 137, 93, 0.1);
+    color: #16895d;
+    transform: translateX(4px);
+}
+
+.nav-item.active {
+    background-color: #16895d;
+    color: #ffffff;
+}
+
+.nav-item.active img {
+    filter: brightness(0) invert(1);
+}
+
+.main-content {
+    flex: 1;
+    margin-left: 280px; 
+    padding: 32px 48px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: calc(100% - 280px);
+    min-width: 0; 
+    overflow-x: hidden;
+}
+
+.main-content.expanded {
+    margin-left: 0;
+    width: 100%;
+}
+
+.bg-blur {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(140px);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.blur-1 {
+    width: 600px;
+    height: 600px;
+    top: -100px;
+    right: -100px;
+    background-color: rgba(135, 203, 28, 0.35);
+}
+
+.blur-2 {
+    width: 500px;
+    height: 500px;
+    bottom: 0;
+    left: 200px;
+    background-color: rgba(73, 190, 83, 0.25);
+}
+
+.top-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    z-index: 2;
+    flex-wrap: wrap;
+}
+
+.search-bar {
+    display: flex;
+    align-items: center;
+    background: #ffffff;
+    border-radius: 30px;
+    padding: 10px 20px;
+    width: 320px;
+    max-width: 100%;
+    gap: 10px;
+    box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.03);
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.search-bar:focus-within {
+    border-color: #16895d;
+    box-shadow: 0px 4px 12px rgba(22, 137, 93, 0.15);
+}
+
+.search-bar input {
+    border: none;
+    outline: none;
+    font-size: 14px;
+    width: 100%;
+    background: transparent;
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+}
+
+.profile-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.profile-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-name {
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.user-role {
+    font-size: 12px;
+    color: #718096;
+}
+
+.welcome-section h2 {
+    font-size: 26px;
+    font-weight: 700;
+    color: #1a202c;
+    z-index: 2;
+    position: relative;
+}
+
 :root {
     --green-900: #0e3d2a;
     --green-700: #0b6b43;
@@ -13,10 +236,13 @@
     --green-100: #d9f0d4;
     --orange: #f4a261;
     --glass: rgba(255, 255, 255, 0.65);
+    --page-glow: 
+        radial-gradient(ellipse 45% 40% at 100% 0%, #a3d94c 0%, rgba(163, 217, 76, 0) 100%),
+        radial-gradient(ellipse 40% 45% at 12% 52%, #a6dba0 0%, rgba(166, 219, 160, 0) 100%);
     --font-main: "Plus Jakarta Sans", "Poppins", Arial, sans-serif;
 }
 
-/* ---------- 2. BASE ---------- */
+/*  BASE  */
 *,
 *::before,
 *::after {
@@ -29,8 +255,7 @@ body {
     font-family: var(--font-main);
     color: #111;
     background:
-        radial-gradient(ellipse 45% 40% at 100% 0%, #a3d94c 0%, rgba(163, 217, 76, 0) 100%),
-        radial-gradient(ellipse 40% 45% at 12% 52%, #a6dba0 0%, rgba(166, 219, 160, 0) 100%),
+        var(--page-glow),
         linear-gradient(135deg, #e9f7e4 0%, #f7fcf5 45%, #eef9e6 100%);
     background-attachment: fixed;
 }
@@ -44,7 +269,6 @@ img {
     max-width: 100%;
 }
 
-/* ---------- 3. LAYOUT ---------- */
 .container {
     width: 100%;
     max-width: 1100px;
@@ -52,7 +276,7 @@ img {
     padding-inline: 24px;
 }
 
-/* ---------- 4. COMPONENTS (dipakai ulang di semua halaman) ---------- */
+/* ---------- COMPONENTS (dipakai ulang di semua halaman) ---------- */
 .btn {
     padding: 6px 16px;
     border: 1.5px solid var(--green-600);
@@ -169,7 +393,7 @@ img {
     color: #5b7d6c;
 }
 
-/* ---------- 6. FOOTER (base.html) ---------- */
+/* ---------- FOOTER (base.html) ---------- */
 .site-footer {
     padding: 20px 0 28px;
 }
@@ -194,8 +418,8 @@ img {
     object-fit: contain;
 }
 
-/* ---------- 7. HOME PAGE ---------- */
-/* Hero */
+/* ---------- HOME PAGE ---------- */
+
 .hero {
     padding-top: 24px;
 }
@@ -245,7 +469,6 @@ img {
     height: auto;
 }
 
-/* Features */
 .features {
     padding-top: 8px;
 }
@@ -295,8 +518,229 @@ img {
     line-height: 1.4;
 }
 
-/* ---------- 8. RESPONSIVE ---------- */
+.faq-section {
+    padding-top: 16px;
+}
+
+.faq-header {
+    margin-bottom: 32px;
+}
+
+.faq-header h1 {
+    margin: 0 0 8px;
+    font-size: 42px;
+    font-weight: 800;
+    color: var(--green-900);
+}
+
+.faq-header p {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--green-600);
+}
+
+.faq-list {
+    width: 100%;
+    max-width: 800px;
+    margin-inline: auto;
+}
+
+.faq-item {
+    margin-bottom: 10px;
+    border-radius: 12px;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+.faq-item details {
+    width: 100%;
+}
+
+.faq-item summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+
+    padding: 10px 14px;
+
+    list-style: none;
+    cursor: pointer;
+
+    font-size: 14px;
+    font-weight: 700;
+    color: #111;
+}
+
+.faq-item summary::-webkit-details-marker {
+    display: none;
+}
+
+.faq-icon {
+    position: relative;
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+
+    border: 1.5px solid #9aafa4;
+    border-radius: 50%;
+}
+
+.faq-icon::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235f7a6c' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='M5 9l7 7 7-7'/></svg>") center / 10px no-repeat;
+    transition: transform 0.2s ease;
+}
+
+.faq-item details[open] .faq-icon {
+    transform: scaleY(-1);
+}
+
+.faq-answer {
+    padding: 0 14px 14px;
+}
+
+.faq-answer p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #4a5a51;
+}
+
+.faq-empty {
+    text-align: center;
+    font-size: 15px;
+    color: #5b7d6c;
+}
+
+body.page-about {   
+    background-image: var(--page-glow), var(--about-bg);
+    background-size: cover;
+    background-position: center top;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+
+.about-hero {
+    padding: 28px 0 32px;
+}
+ 
+.about-kicker {
+    margin: 0 0 8px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #0a7a14;
+}
+ 
+.about-title {
+    margin: 0 0 20px;
+    max-width: 9em;
+    font-size: clamp(40px, 5vw, 60px);
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -0.5px;
+    color: var(--green-900);
+}
+ 
+.about-description {
+    max-width: 48em;
+    margin-bottom: 28px;
+    font-size: 16px;
+}
+ 
+.about-description p {
+    margin: 0 0 20px;
+    font-size: 1em;
+    font-weight: 700;
+    line-height: 1.5;
+    color: #fff;
+}
+ 
+.about-description .highlight {
+    color: #0a7a14;
+}
+ 
+.about-cards {
+    display: grid;
+    grid-template-columns: 1fr 1.7fr;
+    gap: 48px;
+    width: 94%;
+    margin-inline: auto;
+}
+ 
+.about-card {
+    padding: 14px 20px 18px;
+    border-radius: 14px;
+    color: #fff;
+    background: rgba(40, 60, 45, 0.55);
+    backdrop-filter: blur(4px);
+}
+ 
+.about-card-header {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 6px;
+}
+ 
+.about-card-header h2 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+}
+ 
+.about-card-icon {
+    position: absolute;
+    left: 0;
+    width: 22px;
+    height: 22px;
+    color: #19c37d;
+}
+ 
+.about-card p,
+.about-card li {
+    font-size: 15px;
+    line-height: 1.5;
+}
+ 
+.about-card-vision p {
+    margin: 0;
+    text-align: center;
+}
+ 
+.about-card-mission ol {
+    margin: 0;
+    padding-left: 20px;
+}
+
 @media (max-width: 900px) {
+    .sidebar {
+        width: 80px; 
+        padding: 24px 12px;
+        align-items: center;
+    }
+
+    .brand-name, 
+    .nav-item span {
+        display: none; 
+    }
+
+    .nav-item {
+        justify-content: center;
+        padding: 12px;
+        border-radius: 50%;
+    }
+
+    .main-content {
+        margin-left: 80px;
+        width: calc(100% - 80px);
+        padding: 24px 20px;
+    }
+
     .header-inner {
         flex-wrap: wrap;
         justify-content: center;
@@ -324,5 +768,25 @@ img {
     .footer-tagline {
         gap: 12px;
         text-align: center;
+    }
+
+    .faq-header h1 {
+        font-size: 34px;
+    }
+
+    .faq-header p {
+        font-size: 18px;
+    }
+
+    .faq-list {
+        max-width: 100%;
+    }
+
+    .faq-item summary {
+        font-size: 13px;
+    }
+
+    .about-cards {
+        grid-template-columns: 1fr;
     }
 }

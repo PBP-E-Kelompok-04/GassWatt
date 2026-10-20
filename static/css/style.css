@@ -228,7 +228,7 @@ html, body {
     --green-500: #00b300;
     --green-100: #d9f0d4;
     --orange: #f4a261;
-    --glass: rgba(255, 255, 255, 0.65);
+    --glass: rgba(255, 255, 255, 0.5);
     --page-glow: 
         radial-gradient(ellipse 45% 40% at 100% 0%, #a3d94c 0%, rgba(163, 217, 76, 0) 100%),
         radial-gradient(ellipse 40% 45% at 12% 52%, #a6dba0 0%, rgba(166, 219, 160, 0) 100%);
@@ -245,6 +245,7 @@ html, body {
 body {
     margin: 0;
     min-height: 100vh;
+    padding-top: 92px;
     font-family: var(--font-main);
     color: #111;
     background:
@@ -318,7 +319,11 @@ img {
 
 /* ---------- 5. HEADER (base.html) ---------- */
 .site-header {
-    padding-top: 24px;
+    position: fixed;
+    top: 24px;
+    left: 0;
+    right: 0;
+    z-index: 100;
 }
 
 .header-inner {
@@ -726,6 +731,10 @@ body.page-about {
         justify-content: center;
         padding: 12px;
         border-radius: 50%;
+    }
+
+    .body {
+        padding-top: 150px;
     }
 
     .main-content {

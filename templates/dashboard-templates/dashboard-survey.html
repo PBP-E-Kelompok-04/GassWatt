@@ -1,11 +1,162 @@
 {% extends "dashboard-templates/dashboard-base.html" %}
+{% load static %}
 
 {% block meta %}
-    <title>Dashboard - survey</title>
-{% endblock meta %}
+<title>Survey - GassWatt</title>
+<link rel="stylesheet" href="{% static 'css/survey-style.css' %}">
+{% endblock %}
 
 {% block content %}
-    <section class="welcome-section">
-        <h2>Survey</h2>
+<div class="survey-page">
+
+    <!-- Sapaan -->
+    <section class="survey-welcome">
+        <p class="welcome-greeting">Halo, Hannah! 👋</p>
+        <!-- <p class="welcome-greeting">Halo, request.user.username! 👋</p> -->
+        <h1>Mari isi survey kebiasaan sehari-harimu.</h1>
+        <p class="welcome-description">
+            Pilih dan isi kebiasaan sehari-hari yang biasa kamu lakukan
+        </p>
     </section>
+
+    <!-- Navigasi kategori -->
+    <nav class="survey-tabs">
+        <a href="#" class="survey-tab">
+            Perangkat Listrik
+        </a>
+
+        <a href="#" class="survey-tab active">
+            <span>🚆</span> Transportasi
+        </a>
+
+        <a href="#" class="survey-tab">
+            Barang Reusable
+        </a>
+    </nav>
+
+    <!-- Kartu transportasi -->
+    <section class="transport-card">
+
+        <div class="transport-card-header">
+            <h2><span>🚆</span> Transportasi</h2>
+
+            <button type="button" class="btn-add-transport">
+                Tambah Transportasi
+                <span class="plus-icon">+</span>
+            </button>
+        </div>
+
+        <!-- Tabel data -->
+        <div class="transport-table-wrapper" id="tableWrapper">
+
+            <!-- State 1: Loading State -->
+            <!-- <div id="loadingState" class="state-container hidden">
+                <div class="spinner"></div>
+                <p>Memuat data transportasi...</p>
+            </div> -->
+
+            <!-- State 2: Error State -->
+            <!-- <div id="errorState" class="state-container hidden">
+                <span class="state-icon">⚠️</span>
+                <p id="errorMessage">Gagal memuat data. Silakan coba lagi.</p>
+                <button type="button" class="btn-retry" id="btnRetry">Coba Lagi</button>
+            </div> -->
+
+            <!-- State 3: Empty State -->
+            <!-- <div id="emptyState" class="state-container hidden">
+                <span class="state-icon">🍃</span>
+                <h3>Belum Ada Data Transportasi</h3>
+                <p>Kamu belum menambahkan kebiasaan transportasi harianmu.</p>
+            </div> -->
+
+            <table class="transport-table">
+                <thead>
+                    <tr>
+                        <th>Moda Transportasi</th>
+                        <th>Jarak<br>Penggunaan</th>
+                        <th>Emisi yang dihasilkan<br>(kg CO₂/km)</th>
+                        <th>AKSI</th>
+                    </tr>
+                </thead>
+
+                <!-- <tbody id="transportTableBody"> -->
+                    <!-- Data di-render dinamis via JS -->
+                <!-- </tbody> -->
+
+                <tbody>
+                    <tr>
+                        <td>KRL/LRT/MRT</td>
+                        <td>30 Km</td>
+                        <td>1,05</td>
+                        <td>
+                            <div class="table-actions">
+                                <button type="button"
+                                        class="btn-icon"
+                                        aria-label="Edit KRL/LRT/MRT">
+                                    <img src="{% static 'assets/257514.svg' %}"
+                                         alt="">
+                                </button>
+
+                                <button type="button"
+                                        class="btn-icon"
+                                        aria-label="Hapus KRL/LRT/MRT">
+                                    <img src="{% static 'assets/257566.svg' %}"
+                                         alt="">
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td>Motor Bensin</td>
+                        <td>4 Km</td>
+                        <td>0,36</td>
+                        <td>
+                            <div class="table-actions">
+                                <button type="button"
+                                        class="btn-icon"
+                                        aria-label="Edit Motor Bensin">
+                                    <img src="{% static 'assets/257570.svg' %}"
+                                         alt="">
+                                </button>
+
+                                <button type="button"
+                                        class="btn-icon"
+                                        aria-label="Hapus Motor Bensin">
+                                    <img src="{% static 'assets/257572.svg' %}"
+                                         alt="">
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td>Jalan Kaki/Sepeda</td>
+                        <td>1 Km</td>
+                        <td>0,00</td>
+                        <td>
+                            <div class="table-actions">
+                                <button type="button"
+                                        class="btn-icon"
+                                        aria-label="Edit Jalan Kaki/Sepeda">
+                                    <img src="{% static 'assets/257576.svg' %}"
+                                         alt="">
+                                </button>
+
+                                <button type="button"
+                                        class="btn-icon"
+                                        aria-label="Hapus Jalan Kaki/Sepeda">
+                                    <img src="{% static 'assets/257578.svg' %}"
+                                         alt="">
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </section>
+
+</div>
 {% endblock %}

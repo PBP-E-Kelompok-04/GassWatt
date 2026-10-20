@@ -1,0 +1,288 @@
+
+/* =========================
+   SURVEY PAGE
+========================= */
+
+.survey-page {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    padding: 12px 30px 30px;
+    box-sizing: border-box;
+    color: #104b35;
+    font-family: inherit;
+}
+
+/* Sapaan dan judul */
+
+.survey-welcome {
+    margin-bottom: 54px;
+}
+
+.welcome-greeting {
+    margin: 0 0 2px;
+    color: #159467;
+    font-size: 20px;
+    font-weight: 800;
+}
+
+.survey-welcome h1 {
+    margin: 0;
+    color: #123e2d;
+    font-size: clamp(23px, 2.2vw, 29px);
+    line-height: 1.35;
+    font-weight: 800;
+}
+
+.welcome-description {
+    margin: 17px 0 0;
+    color: #111;
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+/* =========================
+   CATEGORY TABS
+========================= */
+
+.survey-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: end;
+    gap: 12px;
+    margin: 0 27px 25px;
+    border-bottom: 2px solid #16865f;
+}
+
+.survey-tab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 12px 4px 8px;
+    color: #626262;
+    font-size: 17px;
+    font-weight: 800;
+    text-align: center;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.survey-tab.active {
+    color: #08754f;
+}
+
+.survey-tab span {
+    font-size: 29px;
+    line-height: 1;
+}
+
+/* =========================
+   TRANSPORT CARD
+========================= */
+
+.transport-card {
+    overflow: hidden;
+    width: 100%;
+    background: #fff;
+    border-radius: 25px;
+}
+
+.transport-card-header {
+    min-height: 83px;
+    padding: 15px 11px 15px 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    box-sizing: border-box;
+}
+
+.transport-card-header h2 {
+    margin: 0;
+    color: #075c3e;
+    font-size: 19px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.transport-card-header h2 span {
+    font-size: 30px;
+    vertical-align: middle;
+}
+
+/* Tombol tambah */
+
+.btn-add-transport {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 13px;
+    border: none;
+    border-radius: 11px;
+    background: #80ce13;
+    color: white;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 800;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.btn-add-transport:hover {
+    background: #70b80d;
+}
+
+.plus-icon {
+    color: #ffd84a;
+    font-size: 34px;
+    font-weight: 700;
+    line-height: 0.8;
+}
+
+/* =========================
+   TRANSPORT TABLE
+========================= */
+
+.transport-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.transport-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    text-align: center;
+}
+
+.transport-table th,
+.transport-table td {
+    padding: 17px 8px;
+    border-top: 1px solid #dedede;
+}
+
+.transport-table th {
+    color: #075c3e;
+    font-size: 14px;
+    line-height: 1.5;
+    font-weight: 800;
+}
+
+.transport-table td {
+    color: #173f30;
+    font-size: 15px;
+    font-weight: 400;
+}
+
+.transport-table th:nth-child(1) {
+    width: 36%;
+}
+
+.transport-table th:nth-child(2) {
+    width: 17%;
+}
+
+.transport-table th:nth-child(3) {
+    width: 29%;
+}
+
+.transport-table th:nth-child(4) {
+    width: 18%;
+}
+
+.transport-table tbody tr {
+    transition: background 0.15s ease;
+}
+
+.transport-table tbody tr:hover {
+    background: #f7fbf7;
+}
+
+/* Tombol edit dan hapus */
+
+.table-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+}
+
+.btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+}
+
+.btn-icon img {
+    display: block;
+    width: 21px;
+    height: 21px;
+    object-fit: contain;
+}
+
+.btn-icon:hover {
+    opacity: 0.65;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 768px) {
+    .survey-page {
+        padding: 15px;
+    }
+
+    .survey-welcome {
+        margin-bottom: 30px;
+    }
+
+    .survey-tabs {
+        gap: 2px;
+        margin: 0 0 20px;
+    }
+
+    .survey-tab {
+        font-size: 12px;
+        white-space: normal;
+    }
+
+    .survey-tab span {
+        font-size: 20px;
+    }
+
+    .transport-card {
+        border-radius: 17px;
+    }
+
+    .transport-card-header {
+        flex-wrap: wrap;
+        min-height: auto;
+        padding: 15px;
+    }
+
+    .transport-card-header h2 {
+        font-size: 17px;
+    }
+
+    .btn-add-transport {
+        font-size: 11px;
+    }
+
+    .transport-table {
+        min-width: 570px;
+    }
+
+    .transport-table th,
+    .transport-table td {
+        padding: 14px 8px;
+        font-size: 13px;
+    }
+}

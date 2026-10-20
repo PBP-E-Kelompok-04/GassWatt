@@ -30,7 +30,7 @@
                     <img src="" alt="Weather" class="nav-icon" />
                     <span>Weather</span>
                 </a>
-                <a href="{% url 'main:show_dashboard_emission' %}" class="nav-item {% if request.resolver_match.url_name == 'show_dashboard_emission' %}active{% endif %}">
+                <a href="{% url 'main:emission_dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'show_dashboard_emission' %}active{% endif %}">
                     <img src="" alt="Emission" class="nav-icon" />
                     <span>Emission</span>
                 </a>

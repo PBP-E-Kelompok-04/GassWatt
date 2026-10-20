@@ -26,3 +26,9 @@ def get_faq_json(request):
             }
         })
     return JsonResponse(data, safe=False)
+
+def show_about(request):
+    context = {
+        "name": "GassWatt",
+    }
+    return render(request, "about.html", context)

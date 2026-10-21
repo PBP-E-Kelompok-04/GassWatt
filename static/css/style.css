@@ -317,13 +317,18 @@ img {
     border-bottom: 2px solid var(--green-600);
 }
 
-/* ---------- 5. HEADER (base.html) ---------- */
+/* ---------- HEADER (base.html) ---------- */
 .site-header {
     position: fixed;
     top: 24px;
     left: 0;
     right: 0;
     z-index: 100;
+    transition: top 0.3s ease;
+}
+
+.site-header .container {
+    transition: max-width 0.35s ease;
 }
 
 .header-inner {
@@ -335,6 +340,22 @@ img {
     border-radius: 999px;
     background: var(--glass);
     backdrop-filter: blur(6px);
+    transition: padding 0.35s ease, background 0.35s ease, box-shadow 0.35s ease;
+}
+
+.site-header.is-scrolled .container {
+    max-width: 920px;
+}
+
+.site-header.is-scrolled .header-inner {
+    padding: 10px 20px;
+    background: var(--glass);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 6px 24px rgba(14, 61, 42, 0.12);
+}
+
+.site-header.is-scrolled .nav {
+    gap: 28px;
 }
 
 .brand {
@@ -358,6 +379,7 @@ img {
     display: flex;
     align-items: center;
     gap: 44px;
+    transition: gap 0.35s ease;
 }
 
 .nav-link {

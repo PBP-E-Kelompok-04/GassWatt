@@ -12,7 +12,6 @@
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     {% block meta %}{% endblock meta %}
 </head>
-
 <body class="{% block body_class %}{% endblock body_class %}">
     {% with current=request.resolver_match.url_name %}
     <header class="site-header">
@@ -57,5 +56,13 @@
             </div>
         </div>
     </footer>
+<script>
+    const siteHeader = document.querySelector(".site-header");
+    function updateHeader(){
+        siteHeader.classList.toggle("is-scrolled", window.scrollY>20)
+    }
+    window.addEventListener("scroll", updateHeader, { passive:true });
+    updateHeader();
+</script>
 </body>
 </html>

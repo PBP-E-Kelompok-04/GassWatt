@@ -249,6 +249,18 @@ if (btnConfirmDelete) btnConfirmDelete.addEventListener('click', executeDeleteAj
 const btnCloseModal = document.getElementById('btnCloseModal');
 if (btnCloseModal) btnCloseModal.addEventListener('click', () => closeModal(surveyModal));
 
+const btnCloseIcon = document.getElementById('btnCloseIcon');
+if (btnCloseIcon) btnCloseIcon.addEventListener('click', () => closeModal(surveyModal));
+
+// close kalau pencet selain form
+if (surveyModal) {
+        surveyModal.addEventListener("click", function (event) {
+            if (event.target === surveyModal) {
+                closeModal(surveyModal);
+            }
+        });
+    }
+
 const btnCancelDelete = document.getElementById('btnCancelDelete');
 if (btnCancelDelete) btnCancelDelete.addEventListener('click', () => closeModal(deleteModal));
 

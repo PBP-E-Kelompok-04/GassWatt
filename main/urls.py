@@ -1,6 +1,7 @@
 from django.urls import path
 
 from main.views import(
+    show_login, login_user, show_register, register_user,
     show_home,
     show_dashboard, 
     show_dashboard_survey, 
@@ -17,6 +18,12 @@ from main.views import(
 app_name = "main"
 
 urlpatterns = [
+    # auth
+    path("login/", show_login, name="show_login"),
+    path("login/submit/", login_user, name="login_user"),
+    path("register/", show_register, name="show_register"),
+    path("register/submit/", register_user, name="register_user"),
+
     path("", show_home, name="show_home"),
     path("dashboard/", show_dashboard, name="show_dashboard"),
     path("dashboard/survey/", show_dashboard_survey, name="show_dashboard_survey"),

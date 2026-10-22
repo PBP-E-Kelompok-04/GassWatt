@@ -1,19 +1,69 @@
-
 from datetime import timedelta
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, render, redirect
 from django.utils import timezone
+from django.views.decorators.http import require_GET, require_POST
+from django.contrib.auth import authenticate, login
+from django.contrib import messages
+from django.contrib.auth.models import User
 
 from .models import TransportationSurvey, DailyEmissionLog
 from .forms import TransportationSurveyForm
-
-
-from django.http import JsonResponse
-from django.shortcuts import render
 from main.models import FAQ
+
+#=========================================================================================#
+#                                   LOGIN VIEWS                                           #
+#=========================================================================================#
+@require_GET
+def show_login(request):
+    return render(request, "login.html")
+ 
+@require_POST
+def login_user(request):
+    username = request.POST.get("username", "").strip()
+    password = request.POST.get("password", "")
+ 
+    user = authenticate(request, username=username, password=password)
+    if user is None:
+        messages.error(request, "Username atau password invalid.")
+        return redirect("main:show_login")
+    login(request, user)
+
+    if user.is_staff or user.is_superuser:
+        #TODO: Change redirect to admin dashboard
+        return redirect("main:show_dashboard_weather")
+    return redirect("main:show_dashboard_weather")
+
+ 
+@require_GET
+def show_register(request):
+    return render(request, "register.html")
+ 
+@require_POST
+def register_user(request):
+    username = request.POST.get("username", "").strip()
+    email = request.POST.get("email", "").strip()
+    password = request.POST.get("password", "")
+    confirm_password = request.POST.get("confirm_password", "")
+ 
+    if not username or not password:
+        messages.error(request, "Username dan password dibutuhkan.")
+        return redirect("main:show_register")
+ 
+    if password != confirm_password:
+        messages.error(request, "Password tidak sama.")
+        return redirect("main:show_register")
+ 
+    if User.objects.filter(username=username).exists():
+        messages.error(request, "Username sudah diambil.")
+        return redirect("main:show_register")
+ 
+    User.objects.create_user(username=username, email=email, password=password)
+    messages.success(request, "Akun telah dibuat. Anda bisa login.")
+    return redirect("main:show_login")
 
 
 def show_home(request):
@@ -22,8 +72,7 @@ def show_home(request):
 def show_dashboard(request):
     return render(request, "dashboard-templates/dashboard.html")
 
-
-# @login_required
+@login_required
 def show_dashboard_survey(request):
     return render(
         request,

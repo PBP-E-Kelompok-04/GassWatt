@@ -12,6 +12,12 @@ from main.views import(
     emission_dashboard,
     show_faq,
     show_about,
+    admin_dashboard,
+    kelola_pengguna,
+    kelola_faq,
+    add_faq,
+    edit_faq,
+    delete_faq,
 )
 
 app_name = "main"
@@ -29,4 +35,10 @@ urlpatterns = [
     # path("dashboard/emission/", show_dashboard_emission, name="show_dashboard_emission"),
     path("faq/", show_faq, name="show_faq"),
     path("about/", show_about, name="show_about"),
+    path('admin-portal/', admin_dashboard, name='admin_dashboard'),
+    path('admin-portal/pengguna/', kelola_pengguna, name='kelola_pengguna'),
+    path('admin-portal/faq/', kelola_faq, name='kelola_faq'),
+    path('admin-portal/faq/add/', add_faq, name='add_faq'),
+    path('admin-portal/<int:faq_id>/edit/', edit_faq, name='edit_faq'),
+    path('admin-portal/<int:faq_id>/delete/', delete_faq, name='delete_faq'),
 ]

@@ -1,11 +1,129 @@
+
 {% extends "dashboard-templates/dashboard-base.html" %}
+{% load static %}
 
 {% block meta %}
-    <title>Dashboard - emission</title>
-{% endblock meta %}
+<link rel="stylesheet" href="{% static 'css/emission-dashboard.css' %}">
+{% endblock %}
 
 {% block content %}
-    <section class="welcome-section">
-        <h2>Emission</h2>
-    </section>
+<section class="emission-page">
+
+    <h1>Ringkasan Jejak Karbon & Dampak Kamu</h1>
+
+    <!-- Ringkasan utama -->
+    <div class="emission-summary">
+
+        <article class="summary-card">
+            <!-- <div class="summary-icon">☁</div> -->
+            <img src="{% static 'img/zap.png' %}" alt="gambar zap" class="summary-icon" id="zap">
+            <div>
+                <p>Emisi Hari Ini</p>
+                <h2>{{ today_emission|floatformat:1 }} <small class="text-xs font-normal">kg CO₂e</small></h2>            
+            </div>
+        </article>
+
+        <article class="summary-card">
+            <!-- <div class="summary-icon">♧</div> -->
+            <img src="{% static 'img/leaf-trans.png' %}" alt="gambar leaf transparent" class="summary-icon">
+            <div>
+                <p>Penghematan Minggu Ini</p>
+                <h2>{{ co2_saved|floatformat:1 }} <small class="text-xs font-normal">kg CO₂e</small></h2>
+            </div>
+        </article>
+
+        <article class="summary-card">
+            <!-- <div class="summary-icon">◉</div> -->
+            <img src="{% static 'img/Speedometer.png' %}" alt="gambar Speedometer" class="summary-icon">
+            <div>
+                <p>Eco Score (Weekly)</p>
+                <h2>{{ eco_score }}/100</h2>
+            </div>
+        </article>
+
+    </div>
+
+    <!-- Dampak positif -->
+    <h2 class="impact-heading">
+        Dampak Positif Minggu Ini
+    </h2>
+
+    <div class="emission-content">
+
+        <div class="impact-cards">
+
+            <article class="impact-card">
+                <!-- <div class="impact-icon">♧</div> -->
+                <img src="{% static 'img/Tree.png' %}" alt="gambar Tree" class="impact-icon">
+
+                <p>Kebutuhan Serap</p>
+                <h2>{{ trees_saved }} Pohon/Hari</h2>
+            </article>
+
+            <article class="impact-card">
+                <!-- <div class="impact-icon">♧</div> -->
+                <img src="{% static 'img/Car.png' %}" alt="gambar Car" class="impact-icon">
+                <p>Perjalanan dihindari dalam seminggu</p>
+                <h2>{{ avoided_km }} Km</h2>
+            </article>
+
+        </div>
+
+        <!-- Grafik emisi -->
+        {% include 'components/emission_chart.html' %}
+    </div>
+
+</section>
+<script>
+    const searchInput = document.getElementById("searchInput");
+    const cards = document.querySelectorAll(".summary-card, .impact-card, .chart-card");
+
+    // Helper Function: Debounce
+    function debounce(func, delay = 300) {
+        let timeoutId;
+        return function (...args) {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                func.apply(this, args);
+            }, delay);
+        };
+    }
+
+    // Logika Highlight & Standout
+    function highlightCards(query) {
+        const cleanQuery = query.toLowerCase().trim();
+
+        // Jika search bar kosong, kembalikan semua kartu ke tampilan normal
+        if (cleanQuery === "") {
+            cards.forEach(card => {
+                card.classList.remove("card-standout", "card-dimmed");
+            });
+            return;
+        }
+
+        cards.forEach(card => {
+            const fullText = card.textContent.toLowerCase();
+
+            if (fullText.includes(cleanQuery)) {
+                // Kartu yang cocok diberi efek Standout
+                card.classList.add("card-standout");
+                card.classList.remove("card-dimmed");
+            } else {
+                // Kartu yang tidak cocok diredupkan
+                card.classList.add("card-dimmed");
+                card.classList.remove("card-standout");
+            }
+        });
+    }
+
+    // Event listener 'input' dengan debounce 300ms
+    if (searchInput) {
+        searchInput.addEventListener(
+            "input",
+            debounce(function (event) {
+                highlightCards(event.target.value);
+            }, 300)
+        );
+    }
+</script>
 {% endblock %}

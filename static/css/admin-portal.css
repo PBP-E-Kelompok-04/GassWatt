@@ -1,0 +1,936 @@
+/* ==========================================================
+   CSS Tambahan Khusus Modul Admin Portal (Sofie)
+   Mendukung & Melengkapi 'dashboard-style.css'
+   ========================================================== */
+
+/* Grid 4 Kartu Metrik Utama */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;900&display=swap');
+
+/* Memaksa seluruh elemen admin menggunakan font Poppins */
+.dashboard-container, 
+.sidebar, 
+.main-content, 
+.admin-card, 
+.admin-chart-card {
+    font-family: 'Poppins', sans-serif !important;
+}
+
+.admin-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    z-index: 2;
+    position: relative;
+}
+
+.admin-card {
+    background: var(--glass, rgba(255, 255, 255, 0.7));
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 20px;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--green-700, #1a8a5a);
+}
+
+.value-unit {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.card-value {
+    font-size: 32px;
+    font-weight: 900;
+    color: var(--green-900, #0a3d27);
+}
+
+.card-unit {
+    font-size: 14px;
+    color: #888;
+}
+
+.card-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 16px;
+    background-color: var(--green-100, #dcf2e3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.card-icon img {
+    width: 32px;
+    height: 32px;
+}
+
+/* Seksi Grafik & Chart */
+.admin-analytics-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+    z-index: 2;
+    position: relative;
+}
+
+.admin-chart-card {
+    background: var(--glass, rgba(255, 255, 255, 0.7));
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 20px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.admin-chart-card h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--green-900, #0a3d27);
+}
+
+.admin-chart-card .subtitle {
+    font-size: 13px;
+    color: #888;
+    margin-top: -8px;
+}
+
+.chart-box {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px 0;
+}
+
+.chart-box img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Legenda Donut Chart */
+.chart-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 13px;
+}
+
+.legend {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.color-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+}
+
+.color-dot.electricity { background-color: #0284c7; }
+.color-dot.transport { background-color: #ffb31e; }
+.color-dot.reusable { background-color: #d9d9d9; }
+
+/* Responsive untuk Layar Kecil */
+@media (max-width: 900px) {
+    .admin-analytics-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ==========================================================
+   STYLE KHUSUS KELOLA PENGGUNA (TABEL & MODAL HAPUS)
+   ========================================================== */
+
+.admin-table-card {
+    background: var(--glass, rgba(255, 255, 255, 0.75));
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 24px;
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    z-index: 2;
+    position: relative;
+}
+
+/* Controls Bar (Filter & Search) */
+.table-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.search-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 30px;
+    padding: 8px 18px;
+    width: 320px;
+    max-width: 100%;
+}
+
+.search-box input {
+    border: none;
+    outline: none;
+    font-size: 14px;
+    font-family: 'Poppins', sans-serif;
+    width: 100%;
+    background: transparent;
+}
+
+.filter-box select {
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-family: 'Poppins', sans-serif;
+    outline: none;
+    cursor: pointer;
+    color: #444;
+}
+
+/* Styling Tabel Data */
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.user-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.user-table th {
+    padding: 14px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--green-900, #015230);
+    border-bottom: 2px solid rgba(0, 0, 0, 0.08);
+}
+
+.user-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    vertical-align: middle;
+}
+
+/* Detail Cell User */
+.user-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-avatar-circle {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background-color: var(--green-100, #dcf2e3);
+    color: var(--green-900, #015230);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 15px;
+    border: 1px solid var(--green-600, #16895d);
+}
+
+.user-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-full-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--green-900, #015230);
+}
+
+.user-email {
+    font-size: 12px;
+    color: #757575;
+}
+
+.role-badge {
+    font-size: 13px;
+    color: var(--green-900, #015230);
+}
+
+.emission-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--green-900, #015230);
+}
+
+/* Status Badges */
+.status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.status-badge.status-active {
+    background-color: #ffffff;
+    border: 1px solid #16895d;
+    color: #16895d;
+}
+
+.status-badge.status-inactive {
+    background-color: #ffffff;
+    border: 1px solid #605858;
+    color: #605858;
+}
+
+/* Delete Button */
+.btn-delete {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 8px;
+    transition: background 0.2s ease;
+}
+
+.btn-delete:hover {
+    background-color: rgba(224, 36, 36, 0.1);
+}
+
+/* Footer Table */
+.table-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 10px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.summary-text {
+    font-size: 14px;
+    color: var(--green-900, #015230);
+}
+
+.pagination {
+    display: flex;
+    gap: 8px;
+}
+
+.page-btn {
+    padding: 6px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    background: #ffffff;
+    font-family: 'Poppins', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    color: #444;
+}
+
+.page-btn.active {
+    background-color: var(--green-700, #16895d);
+    color: #ffffff;
+    border-color: var(--green-700, #16895d);
+}
+
+.page-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Modal Popup Konfirmasi Hapus */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+    z-index: 1000;
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-card {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 28px;
+    width: 420px;
+    max-width: 90%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.modal-card h3 {
+    color: #e02424;
+    font-size: 18px;
+}
+
+.modal-card p {
+    font-size: 14px;
+    color: #555;
+    line-height: 1.5;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.btn-cancel {
+    padding: 8px 18px;
+    border-radius: 20px;
+    border: 1px solid #ccc;
+    background: #fff;
+    cursor: pointer;
+    font-family: 'Poppins', sans-serif;
+}
+
+.btn-confirm-delete {
+    padding: 8px 18px;
+    border-radius: 20px;
+    border: none;
+    background: #e02424;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Poppins', sans-serif;
+}
+
+
+
+
+
+/* ==========================================================
+   GASSWATT — KELOLA FAQ
+   Kartu FAQ, tombol aksi, tombol tambah, dan modal
+   ========================================================== */
+
+/* ---------- HEADER & CONTAINER ---------- */
+
+.faq-admin-container {
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 24px;
+    padding: 32px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+    box-sizing: border-box;
+}
+
+.faq-top-action {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 28px;
+}
+
+.faq-text-info h3 {
+    margin: 0 0 4px;
+    color: #015230;
+    font-size: 26px;
+    font-weight: 700;
+}
+
+.faq-text-info p {
+    margin: 0;
+    color: #605858;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.user-role-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border: 1px solid #16895d;
+    border-radius: 20px;
+    background: #fff;
+    color: #16895d;
+    font-size: 11px;
+}
+
+/* ---------- TOMBOL TAMBAH FAQ ---------- */
+
+.btn-green-figma {
+    appearance: none;
+    -webkit-appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px 28px;
+    min-height: 60px;
+    border: 1px solid transparent;
+    border-radius: 16px;
+    background: #087b4b;
+    color: #fff;
+    font-family: 'Poppins', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.4;
+    cursor: pointer;
+    box-shadow: none;
+    transition: background-color 0.2s ease,
+                transform 0.2s ease;
+}
+
+.btn-green-figma:hover {
+    background: #06683f;
+    border-color: transparent;
+    box-shadow: none;
+    transform: translateY(-1px);
+}
+
+.btn-green-figma:focus-visible {
+    outline: 2px solid #16895d;
+    outline-offset: 3px;
+}
+
+/* ---------- DAFTAR & KARTU FAQ ---------- */
+
+.faq-cards-list {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+}
+
+.faq-row-card {
+    display: block;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    box-sizing: border-box;
+    overflow: visible;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.035);
+    border-radius: 16px;
+    box-shadow: 0 3px 12px rgba(16, 70, 45, 0.045);
+    transition: box-shadow 0.2s ease;
+}
+
+.faq-row-card:hover {
+    box-shadow: 0 5px 16px rgba(16, 70, 45, 0.07);
+}
+
+.faq-row-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    min-height: 70px;
+    padding: 14px 22px;
+    box-sizing: border-box;
+    background: transparent;
+    cursor: pointer;
+}
+
+.faq-question-title {
+    flex: 1;
+    min-width: 0;
+    color: #294238;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+.faq-actions-group {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 8px;
+}
+
+/* ---------- IKON EDIT, HAPUS & CHEVRON ---------- */
+
+.faq-actions-group .btn-icon-figma {
+    appearance: none;
+    -webkit-appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: transparent;
+    color: #444;
+    box-shadow: none;
+    outline: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.faq-actions-group .btn-icon-figma:hover {
+    background: #eaf5ed;
+    border-color: transparent;
+    box-shadow: none;
+}
+
+.faq-actions-group .btn-icon-figma:focus:not(:focus-visible) {
+    outline: none;
+}
+
+.faq-actions-group .btn-icon-figma:focus-visible {
+    outline: 2px solid #16895d;
+    outline-offset: 2px;
+}
+
+.faq-actions-group .btn-icon-figma svg {
+    display: block;
+    flex-shrink: 0;
+}
+
+.faq-actions-group form {
+    display: inline-flex;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+}
+
+.faq-actions-group .chevron-icon {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+}
+
+.chevron-icon svg {
+    transition: transform 0.2s ease;
+}
+
+.faq-row-card.expanded .chevron-icon svg {
+    transform: rotate(180deg);
+}
+
+/* ---------- JAWABAN ACCORDION ---------- */
+
+.faq-row-body {
+    display: none;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    box-sizing: border-box;
+    padding: 0 22px 22px;
+    overflow: visible;
+    background: transparent;
+}
+
+.faq-row-card.expanded .faq-row-body {
+    display: block;
+}
+
+.faq-row-body p {
+    margin: 0;
+    color: #605858;
+    font-size: 14px;
+    line-height: 1.8;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+/* ---------- MODAL TAMBAH & EDIT FAQ ---------- */
+
+#faqModal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+    background: rgba(13, 48, 33, 0.32);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+#faqModal.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+#faqModal .modal-box-figma {
+    width: 100%;
+    max-width: 520px;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    box-sizing: border-box;
+    padding: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: 0 18px 60px rgba(13, 67, 43, 0.16);
+    transform: translateY(8px);
+    transition: transform 0.2s ease;
+}
+
+#faqModal.active .modal-box-figma {
+    transform: translateY(0);
+}
+
+#faqModal .modal-header-figma {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+#faqModal .modal-header-figma h3 {
+    margin: 0;
+    color: #07583b;
+    font-size: 23px;
+    font-weight: 700;
+}
+
+#faqModal .close-btn-figma {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    color: #52645b;
+    font-size: 26px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+#faqModal .close-btn-figma:hover {
+    background: #eaf5ed;
+}
+
+#faqModal .form-field-figma {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+#faqModal .form-field-figma label {
+    color: #244b3a;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+#faqModal .form-field-figma input,
+#faqModal .form-field-figma textarea {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 13px 15px;
+    border: 1px solid #d5e5dc;
+    border-radius: 12px;
+    background: #fff;
+    color: #294238;
+    font-family: 'Poppins', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    outline: none;
+    box-shadow: none;
+    transition: border-color 0.2s ease,
+                box-shadow 0.2s ease;
+}
+
+#faqModal .form-field-figma input {
+    min-height: 48px;
+}
+
+#faqModal .form-field-figma textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+#faqModal .form-field-figma input::placeholder,
+#faqModal .form-field-figma textarea::placeholder {
+    color: #9aaba2;
+}
+
+#faqModal .form-field-figma input:focus,
+#faqModal .form-field-figma textarea:focus {
+    border-color: #16895d;
+    box-shadow: 0 0 0 3px rgba(22, 137, 93, 0.1);
+}
+
+#faqModal .modal-footer-figma {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+#faqModal .modal-footer-figma button {
+    appearance: none;
+    -webkit-appearance: none;
+    min-height: 44px;
+    padding: 11px 22px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+#faqModal .btn-modal-cancel {
+    background: #eaf5ed;
+    color: #07583b;
+}
+
+#faqModal .btn-modal-cancel:hover {
+    background: #dcefe2;
+}
+
+#faqModal .btn-modal-save {
+    background: #087b4b;
+    color: #fff;
+}
+
+#faqModal .btn-modal-save:hover {
+    background: #06683f;
+}
+
+#faqModal .modal-footer-figma button:focus-visible {
+    outline: 2px solid #16895d;
+    outline-offset: 3px;
+}
+
+/* ---------- EMPTY STATE ---------- */
+
+.empty-state-box {
+    padding: 28px;
+    border: 1px dashed #b8d7c4;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.65);
+    color: #52645b;
+    text-align: center;
+}
+
+/* ---------- RESPONSIVE ---------- */
+
+@media (max-width: 768px) {
+    .faq-admin-container {
+        padding: 20px;
+        border-radius: 20px;
+    }
+
+    .faq-top-action {
+        align-items: stretch;
+        margin-bottom: 20px;
+    }
+
+    .faq-text-info h3 {
+        font-size: 22px;
+    }
+
+    .btn-green-figma {
+        width: 100%;
+        min-height: 52px;
+        padding: 14px 18px;
+        font-size: 14px;
+    }
+
+    .faq-row-header {
+        gap: 10px;
+        padding: 12px 14px;
+    }
+
+    .faq-question-title {
+        font-size: 14px;
+    }
+
+    .faq-actions-group {
+        gap: 2px;
+    }
+
+    .faq-actions-group .btn-icon-figma {
+        width: 34px;
+        height: 34px;
+    }
+
+    .faq-row-body {
+        padding: 0 14px 18px;
+    }
+
+    #faqModal {
+        padding: 14px;
+    }
+
+    #faqModal .modal-box-figma {
+        padding: 22px;
+        border-radius: 18px;
+    }
+
+    #faqModal .modal-header-figma h3 {
+        font-size: 20px;
+    }
+
+    #faqModal .modal-footer-figma {
+        gap: 8px;
+    }
+
+    #faqModal .modal-footer-figma button {
+        flex: 1;
+        padding: 11px 12px;
+    }
+}

@@ -1,0 +1,65 @@
+<article class="chart-card">
+    <div class="chart-header">
+        <div>
+            <h2>Jejak Karbon Harian</h2>
+            <p>kg CO₂e selama 7 hari terakhir</p>
+        </div>
+        <span class="chart-period">
+            7 hari terakhir
+        </span>
+    </div>
+
+    <div class="chart-canvas-container">
+        <canvas id="emissionChart"></canvas>
+    </div>
+</article>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const chartCanvas = document.getElementById('emissionChart');
+    if (!chartCanvas) return;
+
+    const ctx = chartCanvas.getContext('2d');
+
+    fetch("{% url 'main:api_emission_chart' %}")
+        .then(res => {
+            if (!res.ok) throw new Error("Gagal mengambil data dari API");
+            return res.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Emisi (kg CO₂e)',
+                            data: data.datasets[0].data,
+                            borderColor: '#10B981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#047857',
+                            pointRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true },
+                            x: {
+                                grid: { display: false },
+                                ticks: { autoSkip: true, maxRotation: 0 }
+                            }
+                        }
+                    }
+                });
+            }
+        })
+        .catch(err => console.error("Error Emission Chart:", err));
+});
+</script>

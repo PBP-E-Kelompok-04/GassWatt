@@ -1,0 +1,36 @@
+
+<div class="modal-overlay" id="weatherRenameModal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true"
+         aria-labelledby="weatherRenameTitle" aria-describedby="weatherRenameDescription">
+        <h3 id="weatherRenameTitle">Ubah Nama Lokasi</h3>
+        <p id="weatherRenameDescription">Masukkan nama baru untuk lokasi tersimpan.</p>
+
+        <form id="weatherRenameForm">
+            {% csrf_token %}
+            <div class="modal-field">
+                <label for="weatherRenameName">Nama lokasi</label>
+                <input type="text" id="weatherRenameName" name="name"
+                       maxlength="255" autocomplete="off" required>
+            </div>
+            <p class="modal-error" id="weatherRenameError" role="alert" hidden></p>
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" id="weatherCancelRename">Batal</button>
+                <button type="submit" class="btn-primary" id="weatherConfirmRename">Simpan Perubahan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+<div class="modal-overlay" id="weatherDeleteModal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true"
+         aria-labelledby="weatherDeleteTitle" aria-describedby="weatherDeleteDescription">
+        <h3 id="weatherDeleteTitle">Hapus Lokasi?</h3>
+        <p id="weatherDeleteDescription">Yakin ingin menghapus lokasi ini?</p>
+        <p class="modal-error" id="weatherDeleteError" role="alert" hidden></p>
+        <div class="modal-actions">
+            <button type="button" class="btn-secondary" id="weatherCancelDelete">Batal</button>
+            <button type="button" class="btn-danger" id="weatherConfirmDelete">Hapus</button>
+        </div>
+    </div>
+</div>

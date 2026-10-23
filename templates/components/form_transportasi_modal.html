@@ -1,6 +1,11 @@
 <div class="modal-overlay hidden" id="surveyModal">
     <div class="modal-card">
-        <h3 id="modalTitle">Tambah Transportasi</h3>
+        <!-- Header dengan Judul dan Icon 'X' Close -->
+        <div class="modal-header">
+            <h3 id="modalTitle">Tambah Transportasi</h3>
+            <button type="button" class="btn-close-icon" id="btnCloseIcon">&times;</button>
+        </div>
+
         <form id="surveyForm">
             {% csrf_token %}
             <input type="hidden" id="surveyId" name="survey_id" value="">

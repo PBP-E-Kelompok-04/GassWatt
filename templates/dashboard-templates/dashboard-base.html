@@ -31,7 +31,7 @@
                     <span>Weather</span>
                 </a>
                 <a href="{% url 'main:emission_dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'emission_dashboard' %}active{% endif %}">
-                    <img src="" alt="Emission" class="nav-icon" />
+                    <img src="{% static 'img/leaf.png' %}" alt="Emission" class="nav-icon" />
                     <span>Emission</span>
                 </a>
             </nav>
@@ -43,8 +43,8 @@
 
             <header class="top-header">
                 <div class="search-bar">
-                    <img src="" alt="Search Icon" class="search-icon" />
-                    <input type="text" placeholder="Search" />
+                    <img src="{% static 'img/search-icon.png' %}" alt="Search Icon" class="search-icon" />
+                    <input type="text" placeholder="Search" id="searchInput"/>
                 </div>
 
                 <div class="user-profile">

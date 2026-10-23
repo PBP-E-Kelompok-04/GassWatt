@@ -12,6 +12,7 @@ from main.views import(
     emission_dashboard,
     show_faq,
     show_about,
+    emission_chart_api,
     admin_dashboard,
     kelola_pengguna,
     kelola_faq,
@@ -38,7 +39,7 @@ urlpatterns = [
     path('dashboard/survey/edit/<uuid:survey_id>/', edit_transport_survey, name='edit_transport_survey'),
     path('dashboard/survey/delete/<uuid:survey_id>/', delete_transport_survey, name='delete_transport_survey'),
     path('dashboard/emission/', emission_dashboard, name='emission_dashboard'),
-
+    path('api/emission-chart/', emission_chart_api, name='api_emission_chart'),
     path("dashboard/weather/", show_dashboard_weather, name="show_dashboard_weather"),
     path("api/search-location/", search_location_api, name="search_location_api"),
     path("api/fetch-weather/", fetch_weather_api, name="fetch_weather_api"),
@@ -47,8 +48,6 @@ urlpatterns = [
     path("api/locations/<int:location_id>/update/", update_location, name="update_location"),
     path("api/locations/<int:location_id>/activate/", activate_location, name="activate_location"),
     path("api/locations/<int:location_id>/delete/", delete_location, name="delete_location"),
-    
-    # path("dashboard/emission/", show_dashboard_emission, name="show_dashboard_emission"),
     path("faq/", show_faq, name="show_faq"),
     path("about/", show_about, name="show_about"),
     path('admin-portal/', admin_dashboard, name='admin_dashboard'),

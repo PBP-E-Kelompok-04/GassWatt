@@ -1,0 +1,238 @@
+
+.emission-page {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    padding: 20px 12px 30px;
+    color: #174532;
+}
+
+.emission-page h1 {
+    font-size: clamp(20px, 2vw, 28px);
+    margin: 0 0 18px;
+    font-weight: 800;
+}
+
+.emission-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.summary-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.65);
+    border-radius: 36px;
+}
+
+.summary-icon,
+.impact-icon {
+    display: flex;
+    flex-shrink: 0;
+    justify-content: center;
+    align-items: center;
+    width: 48px;
+    height: 48px;
+    padding: 10px;
+    border-radius: 50%;
+    background: #b8e8c7;
+    color: #13865d;
+    font-size: 32px;
+    object-fit: contain;
+}
+
+.summary-card p {
+    margin: 0 0 5px;
+    color: #789887;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.summary-card h2 {
+    margin: 0;
+    font-size: clamp(17px, 1.8vw, 24px);
+    overflow-wrap: anywhere;
+}
+
+.impact-heading {
+    margin: 20px 0 12px;
+    font-size: clamp(17px, 1.8vw, 23px);
+    font-weight: 800;
+}
+
+.emission-content {
+    display: grid;
+    grid-template-columns: minmax(120px, 0.7fr) minmax(0, 2fr);
+    gap: 14px;
+    margin: 0;
+    align-items: stretch;
+}
+
+.impact-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.impact-card {
+    display: flex;
+    flex: 1;
+    min-height: 130px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 8px;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.58);
+    border-radius: 32px;
+}
+
+.impact-icon {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 8px;
+}
+
+.impact-card p {
+    margin: 0 0 5px;
+    color: #789887;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.impact-card h2 {
+    margin: 0;
+    font-size: clamp(16px, 1.6vw, 22px);
+}
+
+.chart-card {
+    min-width: 0;
+    padding: 22px 24px;
+    background: rgba(255, 255, 255, 0.75);
+    border-radius: 32px;
+}
+
+.summary-card,
+.impact-card,
+.chart-card {
+    transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.summary-card:hover,
+.impact-card:hover,
+.chart-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 22px rgba(23, 69, 50, 0.12);
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.chart-header h2 {
+    margin: 0 0 4px;
+    font-size: 20px;
+    font-weight: 800;
+    color: #0d3b29;
+}
+
+.chart-header p {
+    margin: 0;
+    color: #6b8c7a;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.chart-period {
+    flex-shrink: 0;
+    padding: 5px 10px;
+    color: #13865d;
+    background: #dcf5e7;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.chart-canvas-container {
+    position: relative;
+    width: 100%;
+    height: 260px;
+}
+
+.chart-canvas-container canvas {
+    width: 100%;
+}
+
+#zap{
+    padding: 0%;
+}
+
+/* Efek kartu yang cocok dengan pencarian (Standout) */
+.card-standout {
+    transform: translateY(-8px) scale(1.02) !important;
+    box-shadow: 0 16px 28px -6px rgba(19, 134, 93, 0.25), 
+                0 6px 12px -2px rgba(0, 0, 0, 0.08) !important;
+    opacity: 1 !important;
+    filter: grayscale(0%) !important;
+    border: 2px solid #10b981 !important; /* Border hijau penegas */
+    z-index: 10;
+}
+
+/* Efek kartu lain yang tidak cocok (Dimmed) */
+.card-dimmed {
+    opacity: 0.35 !important;
+    filter: grayscale(40%) !important;
+    transform: scale(0.98) !important;
+    transition: all 0.3s ease !important;
+}
+
+@media (max-width: 900px) {
+    .emission-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .summary-card {
+        border-radius: 24px;
+    }
+
+    .emission-content {
+        grid-template-columns: 1fr;
+    }
+
+    .impact-cards {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .impact-card {
+        min-height: 150px;
+    }
+}
+
+@media (max-width: 480px) {
+    .emission-page {
+        padding: 16px 8px;
+    }
+
+    .chart-card {
+        padding: 12px 8px;
+    }
+
+    .chart-header {
+        align-items: flex-start;
+        flex-direction: column;
+        margin-bottom: 14px;
+    }
+
+    .chart-canvas-container {
+        height: 220px;
+    }
+}

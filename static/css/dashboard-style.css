@@ -169,6 +169,11 @@
     color: inherit;
 }
 
+.search-icon{
+    width: 16px !important;
+    height: 16px !important; 
+}
+
 .user-profile {
     display: flex;
     align-items: center;

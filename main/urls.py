@@ -12,6 +12,7 @@ from main.views import(
     emission_dashboard,
     show_faq,
     show_about,
+    emission_chart_api,
 )
 
 app_name = "main"
@@ -25,6 +26,7 @@ urlpatterns = [
     path('dashboard/survey/edit/<uuid:survey_id>/', edit_transport_survey, name='edit_transport_survey'),
     path('dashboard/survey/delete/<uuid:survey_id>/', delete_transport_survey, name='delete_transport_survey'),
     path('dashboard/emission/', emission_dashboard, name='emission_dashboard'),
+    path('api/emission-chart/', emission_chart_api, name='api_emission_chart'),
     path("dashboard/weather/", show_dashboard_weather, name="show_dashboard_weather"),
     # path("dashboard/emission/", show_dashboard_emission, name="show_dashboard_emission"),
     path("faq/", show_faq, name="show_faq"),

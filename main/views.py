@@ -1,27 +1,46 @@
-
 from datetime import datetime, timedelta
+import math
+
 
 from django.contrib.auth.decorators import login_required
+from django.db import IntegrityError, transaction
 from django.db.models import Sum
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, render, redirect
+from django.views.decorators.http import require_POST
 from django.utils import timezone
 
-from .models import TransportationSurvey, DailyEmissionLog
+from django.contrib import messages
+
 from .forms import TransportationSurveyForm
 
+from django.views.decorators.http import require_GET, require_POST
 
-from django.http import JsonResponse
-from django.shortcuts import render
-from main.models import FAQ
+from .models import (
+    TransportationSurvey,
+    DailyEmissionLog,
+    FAQ,
+    SavedLocation,
+)
 
+
+from .forms import (
+    TransportationSurveyForm,
+    LocationForm,
+    LocationRenameForm,
+)
+
+from .weather_logic import (
+    WeatherServiceError,
+    get_weather,
+    search_locations,
+)
 
 def show_home(request):
     return render(request, "home.html")
 
 def show_dashboard(request):
     return render(request, "dashboard-templates/dashboard.html")
-
 
 @login_required
 def show_dashboard_survey(request):
@@ -31,13 +50,13 @@ def show_dashboard_survey(request):
         {"form": TransportationSurveyForm()},
     )
 
-
+#@login_required
 def show_dashboard_weather(request):
     return render(request, "dashboard-templates/dashboard-weather.html")
 
 def _sync_daily_emission_logs(user):
     today = timezone.now().date()
-    
+
     current_total = TransportationSurvey.objects.filter(user=user).aggregate(
         total=Sum('daily_emission_co2')
     )['total'] or 0.000
@@ -45,26 +64,36 @@ def _sync_daily_emission_logs(user):
     last_log = DailyEmissionLog.objects.filter(user=user).order_by('-date').first()
 
     if not last_log:
-        DailyEmissionLog.objects.create(user=user, date=today, total_emission_co2=current_total)
+        DailyEmissionLog.objects.create(
+            user=user,
+            date=today,
+            total_emission_co2=current_total
+        )
     else:
         DailyEmissionLog.objects.update_or_create(
             user=user,
             date=today,
             defaults={'total_emission_co2': current_total}
         )
-        
+
         start_date = last_log.date + timedelta(days=1)
+
         while start_date < today:
             DailyEmissionLog.objects.get_or_create(
                 user=user,
                 date=start_date,
-                defaults={'total_emission_co2': last_log.total_emission_co2}
+                defaults={
+                    'total_emission_co2': last_log.total_emission_co2
+                }
             )
             start_date += timedelta(days=1)
 
 @login_required
 def survey_transport_list_json(request):
-    surveys = TransportationSurvey.objects.filter(user=request.user).order_by("-created_at")
+    surveys = TransportationSurvey.objects.filter(
+        user=request.user
+    ).order_by("-created_at")
+
     data = [
         {
             "id": str(survey.id),
@@ -76,13 +105,14 @@ def survey_transport_list_json(request):
         }
         for survey in surveys
     ]
-    return JsonResponse({"status": "success", "data": data})
 
+    return JsonResponse({"status": "success", "data": data})
 
 @login_required
 def add_transport_survey(request):
     if request.method == "POST":
         form = TransportationSurveyForm(request.POST)
+
         if form.is_valid():
             survey = form.save(commit=False)
             survey.user = request.user
@@ -95,37 +125,67 @@ def add_transport_survey(request):
                 'message': 'Data berhasil ditambahkan.'
             }, status=201)
         else:
-            return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
+            return JsonResponse({
+                'status': 'error',
+                'errors': form.errors
+            }, status=400)
 
-    return JsonResponse({"status": "error", "message": "Method tidak diizinkan."}, status=405)
-
+    return JsonResponse({
+        "status": "error",
+        "message": "Method tidak diizinkan."
+    }, status=405)
 
 @login_required
 def edit_transport_survey(request, survey_id):
-    survey = get_object_or_404(TransportationSurvey, id=survey_id, user=request.user)
+    survey = get_object_or_404(
+        TransportationSurvey,
+        id=survey_id,
+        user=request.user
+    )
 
     if request.method == "POST":
         form = TransportationSurveyForm(request.POST, instance=survey)
+
         if form.is_valid():
             form.save()
             _sync_daily_emission_logs(request.user)
-            return JsonResponse({'status': 'success', 'message': 'Data berhasil diperbarui.'}, status=200)
+
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Data berhasil diperbarui.'
+            }, status=200)
         else:
-            return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
+            return JsonResponse({
+                'status': 'error',
+                'errors': form.errors
+            }, status=400)
 
-    return JsonResponse({"status": "error", "message": "Method tidak diizinkan."}, status=405)
-
+    return JsonResponse({
+        "status": "error",
+        "message": "Method tidak diizinkan."
+    }, status=405)
 
 @login_required
 def delete_transport_survey(request, survey_id):
-    survey = get_object_or_404(TransportationSurvey, id=survey_id, user=request.user)
-    
+    survey = get_object_or_404(
+        TransportationSurvey,
+        id=survey_id,
+        user=request.user
+    )
+
     if request.method == "POST":
         survey.delete()
         _sync_daily_emission_logs(request.user)
-        return JsonResponse({'status': 'success', 'message': 'Data berhasil dihapus.'}, status=200)
-        
-    return JsonResponse({"status": "error", "message": "Method tidak diizinkan."}, status=405)
+
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Data berhasil dihapus.'
+        }, status=200)
+
+    return JsonResponse({
+        "status": "error",
+        "message": "Method tidak diizinkan."
+    }, status=405)
 
 @login_required
 def emission_dashboard(request):
@@ -137,10 +197,6 @@ def emission_dashboard(request):
     today = timezone.now().date()
     seven_days_ago = today - timedelta(days=6)
 
-    # ---------------------------------------------------
-    # Step 1: Data Emisi Harian & 7 Hari
-    # ---------------------------------------------------
-    # 1. Emisi riil khusus HARI INI (kg CO2e)
     today_log = DailyEmissionLog.objects.filter(user=user, date=today).first()
     today_emission = float(today_log.total_emission_co2) if today_log else 0.0
 
@@ -153,17 +209,14 @@ def emission_dashboard(request):
         ).aggregate(total=Sum('total_emission_co2'))['total'] or 0.0
     )
 
-    # ---------------------------------------------------
-    # Step 2: Indikator Berbasis Baseline Seminggu (7 Hari)
-    # ---------------------------------------------------
-    # Total jarak harian survey milik user (asumsi rutinitas harian diisi via survey)
+
     daily_survey_distance = float(
         TransportationSurvey.objects.filter(user=user).aggregate(
             total=Sum('daily_distance_km')
         )['total'] or 0.0
     )
 
-    # Akumulasi jarak 7 hari (rutinitas harian x 7 hari)
+    # Akumulasi jarak 7 hari 
     total_7days_distance = daily_survey_distance * 7.0
 
     # Baseline 7 Hari jika seluruh perjalanan menggunakan Mobil Bensin (0.190 kg CO2/km)
@@ -182,7 +235,7 @@ def emission_dashboard(request):
     # 3. Beban Serap Pohon HARI INI (1 pohon dewasa ~ 0.06 kg CO2e / hari)
     trees_saved = round(today_emission / 0.06) if today_emission > 0 else 0
 
-    # 4. Perjalanan Dihindari SEMINGGU (Moda ramah lingkungan x 7 hari)
+    # 4. Perjalanan Dihindari seminggu (Moda ramah lingkungan x 7 hari)
     eco_friendly_modes = ['walk_bike', 'krl_mrt_lrt', 'busway']
     daily_eco_distance = float(
         TransportationSurvey.objects.filter(
@@ -192,21 +245,18 @@ def emission_dashboard(request):
     )
     avoided_km_7days = daily_eco_distance * 7.0
 
-    # ---------------------------------------------------
-    # Step 3: Kirim ke Context Template
-    # ---------------------------------------------------
     context = {
-        'today_emission': round(today_emission, 1),       # Harian (kg CO2e)
-        'total_7days_emission': round(total_7days_emission, 1), # Seminggu (kg CO2e)
-        'co2_saved': round(co2_saved_7days, 1),            # Seminggu (kg CO2e)
-        'eco_score': eco_score,                            # Seminggu (0-100)
-        'trees_saved': trees_saved,                        # Harian (Pohon/Hari)
-        'avoided_km': round(avoided_km_7days, 1),          # Seminggu (Km)
+        'today_emission': round(today_emission, 1),       
+        'total_7days_emission': round(total_7days_emission, 1), 
+        'co2_saved': round(co2_saved_7days, 1),            
+        'eco_score': eco_score,                            
+        'trees_saved': trees_saved,                        
+        'avoided_km': round(avoided_km_7days, 1),          
     }
     
     return render(request, 'dashboard-templates/dashboard-emission.html', context)
 
-# @login_required
+@login_required
 def emission_chart_api(request):
     user = request.user
     _sync_daily_emission_logs(user)
@@ -237,15 +287,18 @@ def emission_chart_api(request):
     })
 
 def show_faq(request):
-    faq_list = FAQ.objects.filter(is_active=True)
-    context = {
-        "faq_list" : faq_list,
-    }
-    return render(request, "faq.html", context)
+    faq_list = FAQ.objects.filter(
+        is_active=True
+    ).order_by("order", "id")
+
+    return render(request, "faq.html", {
+        "faq_list": faq_list,
+    })
 
 def get_faq_json(request):
     faqs = FAQ.objects.all()
     data = []
+
     for faq in faqs:
         data.append({
             "pk": str(faq.id),
@@ -256,11 +309,288 @@ def get_faq_json(request):
                 "is_active": faq.is_active,
             }
         })
+
     return JsonResponse(data, safe=False)
 
 def show_about(request):
     context = {
         "name": "GassWatt",
     }
+
     return render(request, "about.html", context)
+
+
+
+def admin_dashboard(request):
+    # Data dummy (contoh)
+    context = {
+        'admin_name' : 'Sofie',
+        'npm' : '12345',
+        'total_pengguna' : 5,
+        'total_emisi' : '3.482',
+        'aktivitas_hari_ini' : 542,
+        'total_kota' : 12,
+    }
+    return render(request, "admin-templates/admin-dashboard.html", context)
+
+def kelola_pengguna(request):
+    return render(request, "admin-templates/kelola-pengguna.html")
+
+## @login_required
+def kelola_faq(request):
+    faq_list = FAQ.objects.all().order_by("order", "id")
+    context = {
+        "faq_list": faq_list,
+        "admin_name": (
+            request.user.get_full_name() or request.user.username
+            if request.user.is_authenticated
+            else "Administrator"
+        ),
+    }
+
+    return render(request, "admin-templates/kelola-faq.html", context)
+
+## @login_required
+@require_POST
+def add_faq(request):
+    question = request.POST.get("question", "").strip()
+    answer = request.POST.get("answer", "").strip()
+
+    if not question or not answer:
+        messages.error(request, "Pertanyaan dan jawaban wajib diisi.")
+        return redirect('main:kelola_faq')
+    
+
+    FAQ.objects.create (
+        question=question,
+        answer=answer,
+        order=(FAQ.objects.order_by("-order").values_list("order", flat=True).first() or 0) + 1,
+        is_active=True,
+    )
+
+    messages.success(request, "FAQ berhasil ditambahkan.")
+    return redirect('main:kelola_faq')
+
+## @login_required
+@require_POST
+def edit_faq(request, faq_id):
+    faq = get_object_or_404(FAQ, id=faq_id)
+
+    question = request.POST.get("question", "").strip()
+    answer = request.POST.get("answer", "").strip()
+
+    if not question or not answer:
+        messages.error(request, "Pertanyaan dan jawaban wajib diisi.")
+        return redirect("main:kelola_faq")
+
+    faq.question = question
+    faq.answer = answer
+    faq.save()
+
+    messages.success(request, "FAQ berhasil diperbarui")
+    return redirect("main:kelola_faq")
+
+## @login_required
+@require_POST
+def delete_faq(request, faq_id):
+    faq = get_object_or_404(FAQ, id=faq_id)
+    faq.delete()
+
+    messages.success(request, "FAQ berhasil dihapus.")
+    return redirect('main:kelola_faq')
+
+@login_required
+@require_GET
+def search_location_api(request):
+    query = request.GET.get("q", "").strip()
+
+    if len(query) < 2:
+        return JsonResponse({"results": []})
+
+    if len(query) > 100:
+        return JsonResponse({
+            "error": "Pencarian maksimal 100 karakter."
+        }, status=400)
+
+    try:
+        return JsonResponse({
+            "results": search_locations(query)
+        })
+    except WeatherServiceError:
+        return JsonResponse({
+            "error": "Pencarian lokasi sementara gagal."
+        }, status=502)
+
+@login_required
+def fetch_weather_api(request):
+    try:
+        latitude = float(request.GET["lat"])
+        longitude = float(request.GET["lon"])
+    except (KeyError, ValueError, TypeError):
+        return JsonResponse({
+            "error": "Latitude dan longitude wajib berupa angka."
+        }, status=400)
+
+    if not (
+        math.isfinite(latitude)
+        and math.isfinite(longitude)
+        and -90 <= latitude <= 90
+        and -180 <= longitude <= 180
+    ):
+        return JsonResponse({
+            "error": "Koordinat berada di luar rentang yang valid."
+        }, status=400)
+
+    try:
+        return JsonResponse(
+            get_weather(latitude, longitude)
+        )
+    except WeatherServiceError:
+        return JsonResponse({
+            "error": "Gagal mengambil cuaca dari Open-Meteo. Coba lagi."
+        }, status=502)
+
+def serialize_locations(location):
+    return {
+        "id": location.id,
+        "name": location.name,
+        "latitude": location.latitude,
+        "longitude": location.longitude,
+        "is_active": location.is_active,
+    }
+
+@login_required
+@require_GET
+def list_locations(request):
+    locations = SavedLocation.objects.filter(
+        user=request.user
+    )
+
+    return JsonResponse({
+        "results": [
+            serialize_locations(location)
+            for location in locations
+        ]
+    })
+
+@login_required
+@require_POST
+def save_location(request):
+    form = LocationForm(request.POST)
+
+    if not form.is_valid():
+        return JsonResponse({
+            "errors": form.errors
+        }, status=400)
+
+    values = form.cleaned_data
+
+    try:
+        with transaction.atomic():
+            SavedLocation.objects.filter(
+                user=request.user,
+                is_active=True
+            ).update(is_active=False)
+
+            location = SavedLocation.objects.filter(
+                user=request.user,
+                latitude=values["latitude"],
+                longitude=values["longitude"],
+            ).first()
+
+            created = location is None
+
+            if created:
+                location = form.save(commit=False)
+                location.user = request.user
+            else:
+                location.name = values["name"]
+
+            location.is_active = True
+            location.save()
+
+    except IntegrityError:
+        return JsonResponse({
+            "error": "Lokasi sedang diubah, coba kembali."
+        }, status=409)
+
+    return JsonResponse({
+        "status": "success",
+        "created": created,
+        "location": serialize_locations(location)
+    }, status=201 if created else 200)
+
+@login_required
+@require_POST
+def update_location(request, location_id):
+    location = get_object_or_404(
+        SavedLocation,
+        pk=location_id,
+        user=request.user
+    )
+
+    form = LocationRenameForm(
+        request.POST,
+        instance=location
+    )
+
+    if not form.is_valid():
+        return JsonResponse({
+            "errors": form.errors
+        }, status=400)
+
+    location = form.save()
+
+    return JsonResponse({
+        "status": "success",
+        "location": serialize_locations(location)
+    })
+
+@login_required
+@require_POST
+def activate_location(request, location_id):
+    try:
+        with transaction.atomic():
+            location = get_object_or_404(
+                SavedLocation,
+                pk=location_id,
+                user=request.user
+            )
+
+            SavedLocation.objects.filter(
+                user=request.user,
+                is_active=True
+            ).exclude(
+                pk=location.pk
+            ).update(is_active=False)
+
+            location.is_active = True
+            location.save(update_fields=["is_active"])
+
+    except IntegrityError:
+        return JsonResponse({
+            "error": "Terjadi konflik saat memilih lokasi."
+        }, status=409)
+
+    return JsonResponse({
+        "status": "success",
+        "location": serialize_locations(location)
+    })
+
+@login_required
+@require_POST
+def delete_location(request, location_id):
+    location = get_object_or_404(
+        SavedLocation,
+        pk=location_id,
+        user=request.user
+    )
+
+    was_active = location.is_active
+    location.delete()
+
+    return JsonResponse({
+        "status": "success",
+        "was_active": was_active
+    })
 

@@ -1,11 +1,185 @@
 {% extends "dashboard-templates/dashboard-base.html" %}
+{% load static %}
 
 {% block meta %}
     <title>Dashboard - weather</title>
+    <link rel="stylesheet" href="{% static 'css/weather-style.css' %}" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+    <script src="{% static 'js/weather.js' %}" defer></script>
 {% endblock meta %}
 
 {% block content %}
-    <section class="welcome-section">
+    <section
+        id="weather-page"
+        class="welcome-section"
+        data-search-url="{% url 'main:search_location_api' %}"
+        data-weather-url="{% url 'main:fetch_weather_api' %}"
+        data-list-url="{% url 'main:list_locations' %}"
+        data-save-url="{% url 'main:save_location' %}"
+        data-update-url-template="{% url 'main:update_location' 999999 %}"
+        data-activate-url-template="{% url 'main:activate_location' 999999 %}"
+        data-delete-url-template="{% url 'main:delete_location' 999999 %}"
+        data-authenticated="{{ request.user.is_authenticated|yesno:'true,false' }}">
+        
         <h2>Weather</h2>
+        <p id="weather-status" class="status-hidden" role="status" aria-live="polite"></p>
+
+        <form id="csrf-form" style="display:none;">{% csrf_token %}</form>
+    
+        <div class="dashboard-grid">
+            
+            <div class="card current-weather-card">
+                <div class="weather-header">
+                    <img src="" alt="Ikon cuaca" id="main-weather-icon" class="main-weather-icon"/>
+                        <div class="weather-main-info">
+                            <h3>Cuaca Saat Ini</h3>
+                            <div class="location-badge">
+                                <img src="{% static 'img/WeatherIcon/location.png' %}" alt="Pin Location" class="pin-icon"/>
+                                <span id="display-location-name">Belum memilih lokasi</span>
+                            </div>
+                            <div class="temp-display" id="display-temp">--°C</div>
+                            <div class="weather-condition" id="display-condition">Pilih lokasi Anda</div>
+                            <small id="weather-updated" class="weather-updated">Belum ada data cuaca</small>
+                            <button type="button" id="btn-refresh-weather" class="btn-refresh-weather" disabled>Perbarui Cuaca</button>
+                        </div>
+                </div>
+    
+                <div class="weather-stats-inline">
+                    <div class="stat-item">
+                         <img id="stat-uv-icon" data-weather-icon="uv" alt="UV Icon" />
+                        <div>
+                            <span class="stat-label">UV Index</span>
+                            <span class="stat-value" id="stat-uv">-</span>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <img id="stat-rain-icon" data-weather-icon="rain" alt="Curah Hujan Icon" />
+                        <div>
+                            <span class="stat-label">Curah Hujan</span>
+                            <span class="stat-value" id="stat-rain">-</span>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <img id="stat-pop-icon" data-weather-icon="pop" alt="Peluang Hujan Icon"/>
+                        <div>
+                            <span class="stat-label">Peluang Hujan</span>
+                            <span class="stat-value" id="stat-pop">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    
+            <div class="card location-card">
+                <div class="card-title">
+                <img src="{% static 'img/WeatherIcon/location.png' %}" alt="Location Icon" class="title-icon" />
+                    <span>Lokasi Anda</span>
+                </div>
+    
+                <div class="map-search-input">
+                    <img src="{% static 'img/WeatherIcon/search.png' %}" alt="Search" class="search-mini" />
+                    <input type="text" id="search-location-input" placeholder="Ketik nama kota/daerah..." autocomplete="off" aria-controls="search-dropdown-results" aria-expanded="false">
+                    <img src="{% static 'img/WeatherIcon/close.png' %}" alt="Hapus pencarian" id="btn-clear-search" class="clear-mini" role="button" tabindex="0" />
+                    <div class="search-dropdown" id="search-dropdown-results" role="listbox" hidden></div>
+                </div>
+    
+                <div class="map-container">
+                    <div id="map-placeholder" class="map-placeholder" aria-label="Peta kosong, pilih lokasi dahulu"></div>
+                    <div id="location-map" hidden></div>
+                </div>
+    
+                <div class="gps-notice">
+                    <img src="{% static 'img/WeatherIcon/location.png' %}" alt="GPS Icon" />
+                    <span id="gps-status-text">Gunakan GPS atau cari lokasi di atas</span>
+                </div>
+    
+                <div class="btn-action-row">
+                    <button type="button" class="btn-change-location" id="btn-gps">GPS Perangkat</button>
+                    <button type="button" class="btn-save-location" id="btn-save" disabled>Simpan Lokasi</button>
+                </div>
+
+                {% if request.user.is_authenticated %}
+                <details class="saved-locations-panel">
+                    <summary>Lokasi tersimpan</summary>
+                    <div id="saved-locations-list"></div>
+                </details>
+                {% endif %}
+            </div>
+    
+            <div class="card recommendations-card">
+                <h3>Rekomendasi untukmu</h3>
+                
+                <div class="filter-tabs">
+                    <button type="button" class="tab-btn active" data-category="energi" aria-pressed="true">Energi</button>
+                    <button type="button" class="tab-btn" data-category="mobilitas" aria-pressed="false">Mobilitas</button>
+                    <button type="button" class="tab-btn" data-category="lainnya" aria-pressed="false">Lainnya</button>
+                </div>
+    
+                <div class="recommendation-list" id="recommendations-list">
+                    <div class="empty-placeholder">
+                        Pilih lokasi untuk mendapatkan rekomendasi ramah lingkungan.
+                    </div>
+                </div>
+            </div>
+    
+            <div class="card weather-details-card">
+                <h3>Detail Cuaca</h3>
+    
+                <ul class="detail-list">
+                    <li class="detail-item">
+                        <div class="detail-info"><img id="det-temp-icon" data-weather-icon="temp" alt="Suhu udara" /><span>Suhu Udara</span></div>
+                        <span class="detail-value" id="det-temp">-</span>
+                    </li>
+                    <li class="detail-item">
+                        <div class="detail-info"><img id="det-aqi-icon" data-weather-icon="aqi" alt="Kualitas udara" /><span>Kualitas Udara</span></div>
+                        <span class="detail-value" id="det-aqi">-</span>
+                    </li>
+                    <li class="detail-item">
+                        <div class="detail-info"><img id="det-no2-icon" data-weather-icon="no2" alt="Polusi NO₂" /><span>Polusi NO₂</span></div>
+                        <span class="detail-value" id="det-no2">-</span>
+                    </li>
+                    <li class="detail-item">
+                        <div class="detail-info"><img id="det-humidity-icon" data-weather-icon="humidity" alt="Kelembapan" /><span>Kelembapan</span></div>
+                        <span class="detail-value" id="det-humidity">-</span>
+                    </li>
+                    <li class="detail-item">
+                        <div class="detail-info"><img id="det-rain-icon" data-weather-icon="rain" alt="Curah hujan" /><span>Curah Hujan</span></div>
+                        <span class="detail-value" id="det-rain">-</span>
+                    </li>
+                    <li class="detail-item">
+                        <div class="detail-info"><img id="det-pop-icon" data-weather-icon="pop" alt="Peluang hujan" /><span>Peluang Hujan</span></div>
+                        <span class="detail-value" id="det-pop">-</span>
+                    </li>
+                    <li class="detail-item">
+                        <div class="detail-info"><img id="det-uv-icon" data-weather-icon="uv" alt="UV Index" /><span>UV Index</span></div>
+                        <span class="detail-value" id="det-uv">-</span>
+                    </li>
+                    <li class="detail-item">
+                        <div class="detail-info"><img id="det-wind-icon" data-weather-icon="wind" alt="Kecepatan angin" /><span>Kecepatan Angin</span></div>
+                        <span class="detail-value" id="det-wind">-</span>
+                    </li>
+                    <li class="detail-item">
+                        <div class="detail-info"><img id="det-cloud-icon" data-weather-icon="cloud" alt="Awan" /><span>Awan</span></div>
+                        <span class="detail-value" id="det-cloud">-</span>
+                    </li>
+                    <li class="detail-item">
+                        <div class="detail-info"><img id="det-code-icon" data-weather-icon="code" alt="Weather Code" /><span>Weather Code</span></div>
+                        <span class="detail-value" id="det-code">-</span>
+                    </li>
+                    <li class="detail-item">
+                        <div class="detail-info"><img id="det-time-icon" data-weather-icon="time" alt="Waktu" /><span>Waktu</span></div>
+                        <span class="detail-value" id="det-time">-</span>
+                    </li>
+                    <li class="detail-item">
+                        <div class="detail-info"><img id="det-observed-icon" data-weather-icon="observed" alt="Waktu data" /><span>Waktu Data</span></div>
+                        <span class="detail-value" id="det-observed">-</span>
+                    </li>
+                </ul>
+            </div>
+    
+        </div>
+
+        {% include "components/WeatherComponent.html" %}
     </section>
+
 {% endblock %}

@@ -1,3 +1,254 @@
-from django.test import TestCase
+from unittest.mock import patch
 
-# Create your tests here.
+import requests
+from django.contrib.auth.models import User
+from django.core.cache import cache
+from django.test import TestCase
+from django.urls import reverse
+
+from . import weather_logic
+from .forms import LocationForm, LocationRenameForm
+from .models import SavedLocation
+
+
+class WeatherFlowTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="weather-user",
+            password="test-password"
+        )
+        self.other = User.objects.create_user(
+            username="other-weather",
+            password="test-password"
+        )
+
+        self.client.force_login(self.user)
+        cache.clear()
+        self.forecast = {
+            "timezone": "Asia/Jakarta",
+            "current": {
+                "time": "2026-10-22T14:00", "temperature_2m": 29,
+                "relative_humidity_2m": 70, "precipitation": 0,
+                "weather_code": 2, "is_day": 1, "wind_speed_10m": 12,
+                "cloud_cover": 30,
+            },
+            "hourly": {
+                "time": ["2026-10-22T14:00"],
+                "precipitation_probability": [15], "uv_index": [4],
+            },
+        }
+        self.air = {
+            "current": {
+                "time": "2026-10-22T14:00", "us_aqi": 55,
+                "nitrogen_dioxide": 22.5, "us_aqi_nitrogen_dioxide": 12,
+            },
+            "current_units": {"nitrogen_dioxide": "µg/m³"},
+        }
+
+    def url(self, name, *args):
+        return reverse(f"main:{name}", args=args)
+
+    def mock_api(self, url, params):
+        if url == weather_logic.FORECAST_URL:
+            return self.forecast
+        if url == weather_logic.AIR_QUALITY_URL:
+            return self.air
+        if url == weather_logic.GEOCODING_URL:
+            return {"results": [{"name": "Depok", "admin1": "Jawa Barat",
+                                "country": "Indonesia", "latitude": -6.4,
+                                "longitude": 106.8}]}
+        raise AssertionError(url)
+
+    def test_page_and_api_require_login(self):
+        self.client.logout()
+        self.assertEqual(self.client.get(self.url("show_dashboard_weather")).status_code, 302)
+        endpoints = [
+            ("get", "search_location_api", (), {"q": "Depok"}),
+            ("get", "fetch_weather_api", (), {"lat": -6.4, "lon": 106.8}),
+            ("get", "list_locations", (), {}),
+            ("post", "save_location", (), {}),
+            ("post", "update_location", (1,), {}),
+            ("post", "activate_location", (1,), {}),
+            ("post", "delete_location", (1,), {}),
+        ]
+        for method, name, args, data in endpoints:
+            with self.subTest(endpoint=name):
+                self.assertEqual(getattr(self.client, method)(self.url(name, *args), data).status_code, 401)
+        self.client.force_login(self.user)
+        response = self.client.get(self.url("show_dashboard_weather"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="weatherRenameModal"')
+        self.assertContains(response, 'id="weatherDeleteModal"')
+
+    def test_location_crud_flow(self):
+        first = self.client.post(self.url("save_location"), {
+            "name": " Depok ", "latitude": -6.4, "longitude": 106.8,
+        })
+        self.assertEqual(first.status_code, 201)
+        first_id = first.json()["location"]["id"]
+        second = self.client.post(self.url("save_location"), {
+            "name": "Jakarta", "latitude": -6.2, "longitude": 106.9,
+        })
+        self.assertEqual(second.status_code, 201)
+        second_id = second.json()["location"]["id"]
+        self.assertEqual(self.client.get(self.url("list_locations")).json()["results"][0]["name"], "Jakarta")
+        self.assertEqual(SavedLocation.objects.filter(user=self.user, is_active=True).count(), 1)
+
+        self.assertEqual(self.client.post(self.url("activate_location", first_id)).status_code, 200)
+        self.assertTrue(SavedLocation.objects.get(pk=first_id).is_active)
+        self.assertFalse(SavedLocation.objects.get(pk=second_id).is_active)
+        updated = self.client.post(self.url("update_location", first_id), {"name": " Depok Baru "})
+        self.assertEqual(updated.status_code, 200)
+        self.assertEqual(updated.json()["location"]["name"], "Depok Baru")
+        repeated = self.client.post(self.url("save_location"), {
+            "name": "Depok", "latitude": -6.4, "longitude": 106.8,
+        })
+        self.assertEqual(repeated.status_code, 200)
+        self.assertFalse(repeated.json()["created"])
+        self.assertEqual(SavedLocation.objects.filter(user=self.user).count(), 2)
+
+        deleted = self.client.post(self.url("delete_location", first_id))
+        self.assertEqual(deleted.status_code, 200)
+        self.assertTrue(deleted.json()["was_active"])
+        self.assertFalse(SavedLocation.objects.filter(pk=first_id).exists())
+
+    def test_invalid_location_and_user_isolation(self):
+        bad = {"name": "  ", "latitude": 100, "longitude": 200}
+        self.assertEqual(self.client.post(self.url("save_location"), bad).status_code, 400)
+        self.assertFalse(SavedLocation.objects.exists())
+        own = SavedLocation.objects.create(user=self.user, name="Milik saya", latitude=-6.4, longitude=106.8)
+        other = SavedLocation.objects.create(user=self.other, name="Rahasia", latitude=-6.2, longitude=106.9)
+        self.assertIn("Milik saya", str(own))
+        listed = self.client.get(self.url("list_locations")).json()["results"]
+        self.assertEqual([item["id"] for item in listed], [own.id])
+        for action in ("update_location", "activate_location", "delete_location"):
+            with self.subTest(action=action):
+                self.assertEqual(self.client.post(self.url(action, other.id), {"name": "Bajak"}).status_code, 404)
+        self.assertEqual(self.client.post(self.url("update_location", own.id), {"name": " "}).status_code, 400)
+        for coords in ((91, 106), (-6, 181), ("nan", 106), ("inf", 106)):
+            with self.subTest(coords=coords):
+                self.assertFalse(LocationForm(data={"name": "GPS", "latitude": coords[0],
+                                                    "longitude": coords[1]}).is_valid())
+        self.assertFalse(LocationRenameForm(data={"name": "  "}).is_valid())
+
+    @patch("main.views.search_locations")
+    @patch("main.views.get_weather")
+    def test_api_search_weather_and_errors(self, mock_weather, mock_search):
+        mock_search.return_value = [{"name": "Depok", "latitude": -6.4, "longitude": 106.8}]
+        mock_weather.return_value = {"temperature": 29, "aqi": 55}
+        self.assertEqual(self.client.get(self.url("search_location_api"), {"q": "Depok"}).status_code, 200)
+        self.assertEqual(self.client.get(self.url("fetch_weather_api"), {"lat": -6.4, "lon": 106.8}).json()["temperature"], 29)
+        self.assertEqual(self.client.get(self.url("search_location_api"), {"q": "a"}).json(), {"results": []})
+        self.assertEqual(self.client.get(self.url("search_location_api"), {"q": "x" * 101}).status_code, 400)
+        for params in ({}, {"lat": "abc", "lon": 106}, {"lat": 91, "lon": 106},
+                       {"lat": "nan", "lon": 106}, {"lat": -6, "lon": "inf"}):
+            with self.subTest(params=params):
+                self.assertEqual(self.client.get(self.url("fetch_weather_api"), params).status_code, 400)
+        self.assertEqual(self.client.get(self.url("save_location")).status_code, 405)
+        self.assertEqual(self.client.post(self.url("fetch_weather_api")).status_code, 405)
+        mock_weather.side_effect = weather_logic.WeatherServiceError("down")
+        mock_search.side_effect = weather_logic.WeatherServiceError("down")
+        self.assertEqual(self.client.get(self.url("fetch_weather_api"), {"lat": -6, "lon": 106}).status_code, 502)
+        self.assertEqual(self.client.get(self.url("search_location_api"), {"q": "depok"}).status_code, 502)
+
+    @patch("main.weather_logic.api_get")
+    def test_live_weather_mock_cache_and_location_search(self, mock_get):
+        mock_get.side_effect = self.mock_api
+        weather = weather_logic.get_weather(-6.4, 106.8)
+        self.assertEqual(weather["temperature"], 29)
+        self.assertEqual(weather["aqi"], 55)
+        self.assertEqual(weather["pop"], 15)
+        self.assertEqual(weather["uv_index"], 4)
+        self.assertTrue(weather["weather_icon"])
+        self.assertTrue(weather["icons"]["temp"])
+        self.assertEqual(set(weather["recommendations"]), {"energi", "mobilitas", "lainnya"})
+        weather_logic.get_weather(-6.4, 106.8)
+        self.assertEqual(mock_get.call_count, 2) 
+        self.assertEqual(weather_logic.search_locations("  Depok  ")[0]["name"], "Depok, Jawa Barat, Indonesia")
+        weather_logic.search_locations("depok")
+        self.assertEqual(mock_get.call_count, 3)
+
+    @patch("main.weather_logic.api_get")
+    def test_air_quality_failure_does_not_break_weather(self, mock_get):
+        def air_fails(url, params):
+            if url == weather_logic.AIR_QUALITY_URL:
+                raise weather_logic.WeatherServiceError("air offline")
+            return self.mock_api(url, params)
+
+        mock_get.side_effect = air_fails
+        weather = weather_logic.get_weather(-6.4, 106.8)
+        self.assertEqual(weather["temperature"], 29)
+        self.assertIsNone(weather["aqi"])
+        self.assertNotIn("None", str(weather["recommendations"]))
+        cache.clear()
+        self.forecast["hourly"] = {}
+        self.forecast["current"]["wind_speed_10m"] = None
+        self.forecast["current"]["precipitation"] = None
+        weather = weather_logic.get_weather(-6.4, 106.8)
+        self.assertIsNone(weather["pop"])
+        self.assertIsNone(weather["uv_index"])
+        self.assertEqual(set(weather["recommendations"]), {"energi", "mobilitas", "lainnya"})
+
+    def test_weather_recommendation_scenarios(self):
+        base = weather_logic.parse_forecast(self.forecast)
+        base.update({**weather_logic.AIR_QUALITY_EMPTY, "aqi": 35, "no2_aqi": 10,
+                     "nitrogen_dioxide": 20})
+        cases = [
+            ({"temperature": 23, "weather_code": 0, "pop": 5}, "energi", "Kurangi penggunaan AC"),
+            ({"temperature": 23, "aqi": 191, "no2_aqi": 130}, "energi", "Hemat AC tanpa membuka jendela"),
+            ({"temperature": 34, "precipitation": 2, "pop": 90, "wind_speed": 35, "uv_index": 8}, "mobilitas", "Prioritaskan transportasi umum"),
+            ({"weather_code": 95, "is_day": 0}, "mobilitas", "Tunda perjalanan saat badai"),
+            ({"pop": 50}, "mobilitas", "Persiapan menghadapi hujan"),
+            ({"aqi": 191}, "lainnya", "Kurangi aktivitas di luar ruangan"),
+            ({"aqi": 120}, "lainnya", "Waspadai kualitas udara"),
+            ({"aqi": 55}, "lainnya", "Perhatikan kualitas udara sedang"),
+            ({"no2_aqi": 140}, "lainnya", "Waspadai paparan NO₂"),
+        ]
+        for updates, group, title in cases:
+            with self.subTest(title=title):
+                weather = {**base, **updates}
+                recs = weather_logic.generate_recommendations(weather)
+                self.assertIn(title, [item["title"] for item in recs[group]])
+        suitable = {**base, "pop": 5, "weather_code": 0}
+        self.assertIn("Jalan kaki atau bersepeda", [r["title"] for r in weather_logic.mobility_recommendations(suitable)])
+        polluted = {**suitable, "aqi": 191}
+        self.assertNotIn("Jalan kaki atau bersepeda", [r["title"] for r in weather_logic.mobility_recommendations(polluted)])
+        unavailable = {**base, "aqi": None, "no2_aqi": None, "nitrogen_dioxide": None,
+                       "pop": None, "wind_speed": None, "uv_index": None, "precipitation": None}
+        self.assertNotIn("None", str(weather_logic.generate_recommendations(unavailable)))
+
+    def test_service_validation_and_icon_helpers(self):
+        self.assertEqual(weather_logic.aqi_category(0), "Baik")
+        self.assertEqual(weather_logic.aqi_category(101), "Tidak sehat bagi kelompok sensitif")
+        self.assertEqual(weather_logic.aqi_category(201), "Sangat tidak sehat")
+        self.assertEqual(weather_logic.aqi_category(301), "Berbahaya")
+        self.assertNotEqual(weather_logic.parse_wmo_code(0, 1)[1], weather_logic.parse_wmo_code(0, 0)[1])
+        self.assertEqual(weather_logic.parse_wmo_code(999)[0], "Kondisi tidak diketahui")
+        self.assertTrue(weather_logic.weather_metric_icons(weather_logic.parse_forecast(self.forecast))["code"])
+        self.assertEqual(weather_logic.icon_when_available("temp", None), "")
+        self.assertEqual(weather_logic.value_for_time({}, "uv_index", "2026-10-22T14", hourly=True), None)
+
+        parsed = weather_logic.parse_forecast(self.forecast)
+        self.assertEqual(parsed["temperature"], 29)
+        self.assertEqual(parsed["weather_code"], 2)
+        self.assertEqual(parsed["day_period"], "Siang")
+
+        for changes in (
+            {"time": "bad time"},
+            {"time": None},
+            {"temperature_2m": None},
+            {"weather_code": None},
+            {"is_day": None},
+        ):
+            with self.subTest(changes=changes):
+                payload = {**self.forecast, "current": {**self.forecast["current"], **changes}}
+                with self.assertRaises(weather_logic.WeatherServiceError):
+                    weather_logic.parse_forecast(payload)
+        with self.assertRaises(weather_logic.WeatherServiceError):
+            weather_logic.parse_forecast({"current": {}})
+        with patch("main.weather_logic.requests.get", side_effect=requests.Timeout()):
+            with self.assertRaises(weather_logic.WeatherServiceError):
+                weather_logic.api_get(weather_logic.FORECAST_URL, {})
+        with patch("main.weather_logic.api_get", return_value={"current": {}}):
+            with self.assertRaises(weather_logic.WeatherServiceError):
+                weather_logic.get_air_quality(-6.4, 106.8)

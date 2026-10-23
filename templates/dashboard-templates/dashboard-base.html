@@ -27,7 +27,7 @@
                     <span>Survey</span>
                 </a>
                 <a href="{% url 'main:show_dashboard_weather' %}" class="nav-item {% if request.resolver_match.url_name == 'show_dashboard_weather' %}active{% endif %}">
-                    <img src="" alt="Weather" class="nav-icon" />
+                    <img src="{% static 'img/cloud-sun.png' %}" alt="Weather" class="nav-icon" />
                     <span>Weather</span>
                 </a>
                 <a href="{% url 'main:show_dashboard_emission' %}" class="nav-item {% if request.resolver_match.url_name == 'show_dashboard_emission' %}active{% endif %}">

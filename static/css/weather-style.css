@@ -1,0 +1,545 @@
+#weather-page {
+    font-family: var(--font-main);
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr; 
+    gap: 24px;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.card {
+    background: var(--green-100);
+    backdrop-filter: blur(10px);
+    border: 1.5px solid var(--green-900);
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0px 4px 12px rgba(14, 61, 42, 0.06);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0px 8px 20px rgba(14, 61, 42, 0.16);
+}
+
+.current-weather-card {
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.weather-header {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+.main-weather-icon {
+    width: 90px;
+    height: 90px;
+}
+
+.weather-main-info h3 {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0;
+}
+
+.location-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 15px;
+    font-weight: 600;
+    margin-top: 4px;
+}
+
+.pin-icon {
+    width: 16px;
+    height: 16px;
+}
+
+.temp-display {
+    font-size: 42px;
+    font-weight: 700;
+    line-height: 1.1;
+    margin-top: 8px;
+}
+
+.weather-condition {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.weather-stats-inline {
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid rgba(14, 61, 42, 0.16);
+    padding-top: 16px;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.stat-item img {
+    width: 28px;
+    height: 28px;
+}
+
+.stat-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.stat-value {
+    display: block;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.location-card {
+    gap: 12px;
+    position: relative;
+}
+
+.card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.title-icon {
+    width: 20px;
+    height: 20px;
+}
+
+.map-search-input {
+    background: white;
+    border-radius: 10px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    border: 1px solid rgba(11, 107, 67, 0.26);
+    position: relative;
+}
+
+.map-search-input input {
+    border: none;
+    outline: none;
+    width: 100%;
+    font-size: 13px;
+    font-family: inherit;
+}
+
+.search-mini, .clear-mini {
+    width: 14px;
+    height: 14px;
+}
+
+#btn-clear-search {
+    cursor: pointer;
+}
+
+.search-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid var(--green-900);
+    border-radius: 10px;
+    margin-top: 4px;
+    max-height: 180px;
+    overflow-y: auto;
+    z-index: 20;
+    box-shadow: 0 4px 10px rgba(14, 61, 42, 0.16);
+}
+
+.search-dropdown div:hover {
+    background-color: var(--green-100);
+}
+
+.map-container {
+    position: relative;
+    width: 100%;
+    height: 140px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--green-100);
+}
+
+.gps-notice {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.gps-notice img {
+    width: 12px;
+    height: 12px;
+}
+
+.btn-action-row {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-change-location, .btn-save-location {
+    flex: 1;
+    background: var(--glass);
+    border: 1px solid var(--green-900);
+    padding: 8px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-change-location:hover, .btn-save-location:hover {
+    background: var(--green-700);
+    color: white;
+}
+
+.recommendations-card {
+    gap: 16px;
+}
+
+.filter-tabs {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.tab-btn {
+    background: transparent;
+    border: 1px solid var(--green-900);
+    padding: 6px 18px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tab-btn.active {
+    background: var(--green-700);
+    color: white;
+    border-color: var(--green-700);
+}
+
+.recommendation-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.recommendation-box {
+    background: var(--glass);
+    border: 1px solid var(--green-900);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.rec-content h4 {
+    margin: 0 0 4px 0;
+    font-size: 15px;
+}
+
+.rec-content p {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.detail-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(14, 61, 42, 0.16);
+}
+
+.detail-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.detail-info img {
+    width: 24px;
+    height: 24px;
+}
+
+.detail-value {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.empty-placeholder {
+    text-align: center;
+    padding: 20px 0;
+    font-size: 14px;
+}
+
+#weather-page [hidden],
+#weather-page .status-hidden {
+    display: none !important;
+}
+
+#weather-page img[src=""],
+#weather-page img:not([src]) {
+    visibility: hidden;
+}
+
+#weather-page .search-dropdown:not([hidden]) {
+    display: block;
+}
+#weather-page .search-dropdown button {
+    display: block;
+    width: 100%;
+    border: none;
+    border-bottom: 1px solid rgba(14, 61, 42, 0.16);
+    background: white;
+    text-align: left;
+    font: inherit;
+    font-size: 13px;
+    color: inherit;
+    padding: 10px 12px;
+    cursor: pointer;
+}
+#weather-page .search-dropdown button:hover,
+#weather-page .search-dropdown button:focus-visible {
+    background: var(--green-100);
+}
+
+#weather-page .map-placeholder,
+#weather-page #location-map {
+    width: 100%;
+    height: 100%;
+}
+#weather-page .weather-updated {
+    display: block;
+    margin-top: 6px;
+    font-size: 11px;
+}
+#weather-page .btn-refresh-weather {
+    align-self: flex-start;
+    margin-top: 8px;
+    padding: 5px 11px;
+    border-radius: 10px;
+    background: white;
+    border: 1px solid var(--green-900);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+}
+#weather-page button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+#weather-page #weather-status {
+    margin: 8px 0 12px;
+    font-size: 13px;
+}
+#weather-page #weather-status[data-type="error"] {
+    color: #9b2424;
+}
+#weather-page .saved-locations-panel {
+    font-size: 12px;
+    border-top: 1px solid rgba(14, 61, 42, 0.16);
+    padding-top: 8px;
+}
+#weather-page .saved-locations-panel summary {
+    cursor: pointer;
+    font-weight: 700;
+}
+#weather-page .saved-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(14, 61, 42, 0.16);
+}
+#weather-page .saved-row .saved-name {
+    flex: 1;
+    min-width: 120px;
+    overflow-wrap: anywhere;
+}
+#weather-page .saved-row.is-active .saved-name {
+    font-weight: 700;
+}
+#weather-page .saved-row button {
+    padding: 4px 7px;
+    border-radius: 7px;
+    background: white;
+    border: 1px solid rgba(11, 107, 67, 0.26);
+    font-size: 11px;
+    cursor: pointer;
+}
+#weather-page .rec-icon {
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+#weather-page .detail-value {
+    max-width: 54%;
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
+#weather-page #search-dropdown-results[hidden] {
+    display: none !important;
+}
+
+#weather-page #search-dropdown-results:not([hidden]) {
+    display: block !important;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    background: white;
+}
+
+.modal-overlay[hidden],
+.modal-error[hidden] { display: none !important; }
+
+body.modal-open { overflow: hidden; }
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(14, 61, 42, 0.58);
+    backdrop-filter: blur(4px);
+}
+
+.modal-card {
+    box-sizing: border-box;
+    width: min(440px, 100%);
+    max-height: calc(100dvh - 32px);
+    overflow-y: auto;
+    padding: 26px;
+    border: 1px solid rgba(11, 107, 67, 0.26);
+    border-radius: 22px;
+    background: var(--green-100);
+    box-shadow: 0 24px 70px rgba(14, 61, 42, 0.30);
+    font-family: var(--font-main);
+}
+
+.modal-card h3 {
+    margin: 0 0 10px;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.modal-card p {
+    margin: 0 0 20px;
+    line-height: 1.55;
+    overflow-wrap: anywhere;
+}
+
+.modal-field { margin-bottom: 18px; }
+.modal-field label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.modal-field input {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 12px 13px;
+    border: 1px solid rgba(11, 107, 67, 0.26);
+    border-radius: 11px;
+    background: white;
+    font: inherit;
+}
+
+.modal-field input:focus {
+    outline: 2px solid rgba(26, 138, 90, 0.32);
+    border-color: var(--green-600);
+}
+
+.modal-card .modal-error {
+    margin: -4px 0 16px;
+    font-size: .9rem;
+    color: #ad2834;
+}
+
+.modal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.modal-actions button {
+    min-height: 42px;
+    padding: 10px 17px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.modal-actions .btn-secondary {
+    background: var(--green-100);
+    border-color: rgba(11, 107, 67, 0.26);
+}
+.modal-actions .btn-primary { background: var(--green-700); color: #fff; }
+.modal-actions .btn-danger { background: #b6363c; color: #fff; }
+.modal-actions button:disabled { opacity: .6; cursor: wait; }
+.modal-actions button:focus-visible { outline: 3px solid var(--green-600); outline-offset: 2px; }
+
+@media (max-width: 820px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .modal-card { padding: 22px 18px; }
+    .modal-actions button { flex: 1 1 auto; }
+}

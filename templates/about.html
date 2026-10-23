@@ -1,0 +1,65 @@
+{% extends 'homepage-base.html' %}
+{% load static %}
+{% block title %}GassWatt - About{% endblock title %}
+{% block body_class %}page-about{% endblock body_class %}
+{% block meta %}
+<style>
+    body.page-about {
+        --about-bg: url("{% static 'img/about_bg.png' %}");
+    }
+</style>
+{% endblock meta %}
+{% block content %}
+<main>
+    <section class="about-hero" id="about">
+        <div class="container">
+            <p class="about-kicker">Tentang GassWatt</p>
+            <h1 class="about-title">Power Your Habits, Not Your Footprint</h1>
+            <div class="about-description">
+                <p>
+                    <span class="highlight">GassWatt</span> adalah platform yang dirancang untuk
+                    membantu pengguna memahami dan mengevaluasi jejak karbon dari kebiasaan
+                    sehari-hari, khususnya bagi rumah tangga.
+                </p>
+                <p>
+                    Dengan teknologi yang mudah digunakan dan rekomendasi yang relevan,
+                    <span class="highlight">GassWatt</span> hadir untuk mendukung gaya hidup
+                    yang lebih hemat dan ramah lingkungan.
+                </p>
+            </div>
+            <div class="about-cards">
+                <article class="about-card about-card-vision">
+                    <div class="about-card-header">
+                        <svg class="about-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                        <h2>Visi</h2>
+                    </div>
+                    <p>
+                        Menjadi platform terdepan yang mendukung gaya hidup berkelanjutan
+                        melalui teknologi dan edukasi lingkungan
+                    </p>
+                </article>
+                <article class="about-card about-card-mission">
+                    <div class="about-card-header">
+                        <svg class="about-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="9"></circle>
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <circle cx="12" cy="12" r="1.5"></circle>
+                        </svg>
+                        <h2>Misi</h2>
+                    </div>
+                    <ol>
+                        <li>Membantu pengguna memantau jejak karbon.</li>
+                        <li>Memberikan rekomendasi berbasis data dan cuaca.</li>
+                        <li>Meningkatkan kesadaran akan pentingnya gaya hidup ramah lingkungan</li>
+                    </ol>
+                </article>
+            </div>
+        </div>
+    </section>
+</main>
+{% endblock content %}

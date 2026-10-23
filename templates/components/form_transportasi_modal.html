@@ -1,0 +1,29 @@
+<div class="modal-overlay hidden" id="surveyModal">
+    <div class="modal-card">
+        <h3 id="modalTitle">Tambah Transportasi</h3>
+        <form id="surveyForm">
+            {% csrf_token %}
+            <input type="hidden" id="surveyId" name="survey_id" value="">
+            
+            <div class="form-group">
+                <label for="{{ form.transport_mode.id_for_label }}">Moda Transportasi</label>
+                {{ form.transport_mode }}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.daily_distance_km.id_for_label }}">Jarak (Km)</label>
+                {{ form.daily_distance_km }}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.notes.id_for_label }}">Keterangan (opsional)</label>
+                {{ form.notes }}
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" id="btnCloseModal">Batal</button>
+                <button type="submit" class="btn-primary" id="btnSave">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>

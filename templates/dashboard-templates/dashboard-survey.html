@@ -1,11 +1,102 @@
 {% extends "dashboard-templates/dashboard-base.html" %}
+{% load static %}
 
 {% block meta %}
-    <title>Dashboard - survey</title>
-{% endblock meta %}
+<title>Survey - GassWatt</title>
+<link rel="stylesheet" href="{% static 'css/survey-style.css' %}">
+{% endblock %}
 
 {% block content %}
-    <section class="welcome-section">
-        <h2>Survey</h2>
+<div class="survey-page">
+
+    <!-- Section Welcome & Sapaan -->
+    <section class="survey-welcome">
+        <p class="welcome-greeting">Halo, {{ request.user.get_full_name|default:request.user.username }}! 👋</p>
+        <h1>Mari isi survey kebiasaan sehari-harimu.</h1>
+        <p class="welcome-description">
+            Pilih dan isi kebiasaan sehari-hari yang biasa kamu lakukan
+        </p>
     </section>
+
+    <!-- Navigasi Kategori Survey (Tabs) -->
+    <nav class="survey-tabs">
+        <a href="#" class="survey-tab">
+            Perangkat Listrik
+        </a>
+        <a href="#" class="survey-tab active">
+            <span>🚆</span> Transportasi
+        </a>
+        <a href="#" class="survey-tab">
+            Barang Reusable
+        </a>
+    </nav>
+
+    <!-- Kartu Transportasi (Main Section) -->
+    <section class="transport-card">
+
+        <!-- Card Header: Title & Tambah Button -->
+        <div class="transport-card-header">
+            <h2><span>🚆</span> Transportasi</h2>
+
+            <button type="button" class="btn-add-transport" id="btnOpenAddModal">
+                Tambah Transportasi
+                <span class="plus-icon">+</span>
+            </button>
+        </div>
+
+        <!-- Wrapper Tabel & States (Position Relative untuk Popover Popups) -->
+        <div class="transport-table-wrapper" id="tableWrapper">
+
+            <!-- 1. Loading State -->
+            <div id="loadingState" class="state-container hidden">
+                <div class="spinner"></div>
+                <p>Memuat data transportasi...</p>
+            </div>
+
+            <!-- 2. Error State -->
+            <div id="errorState" class="state-container hidden">
+                <span class="state-icon">⚠️</span>
+                <p id="errorMessage">Gagal memuat data. Silakan coba lagi.</p>
+                <button type="button" class="btn-retry" id="btnRetry">Coba Lagi</button>
+            </div>
+
+            <!-- 3. Empty State -->
+            <div id="emptyState" class="state-container hidden">
+                <span class="state-icon">🍃</span>
+                <h3>Belum Ada Data Transportasi</h3>
+                <p>Kamu belum menambahkan kebiasaan transportasi harianmu.</p>
+            </div>
+
+            <!-- 4. Data Table -->
+            <table class="transport-table" id="transportTable">
+                <thead>
+                    <tr>
+                        <th>Moda Transportasi</th>
+                        <th>Jarak<br>Penggunaan</th>
+                        <th>Emisi yang dihasilkan<br>(kg CO₂/km)</th>
+                        <th>AKSI</th>
+                    </tr>
+                </thead>
+                <tbody id="transportTableBody">
+                    <!-- Data di-render dinamis via JS -->
+                </tbody>
+            </table>
+
+            {% include "components/delete_modal.html" %}
+            {% include "components/form_transportasi_modal.html" %}
+
+        </div>
+
+    </section>
+
+</div>
+
+<div
+    id="surveyConfig"
+    data-list-url="{% url 'main:survey_transport_list_json' %}"
+    data-add-url="{% url 'main:add_transport_survey' %}"
+    data-edit-url-template="{% url 'main:edit_transport_survey' '00000000-0000-0000-0000-000000000000' %}"
+    data-delete-url-template="{% url 'main:delete_transport_survey' '00000000-0000-0000-0000-000000000000' %}">
+</div>
+<script src="{% static 'js/survey-ajax.js' %}"></script>
 {% endblock %}

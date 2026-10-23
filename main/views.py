@@ -5,8 +5,14 @@ from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError, transaction
 from django.db.models import Sum
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, render, redirect
+from django.views.decorators.http import require_POST
 from django.utils import timezone
+
+from django.contrib import messages
+
+from .forms import TransportationSurveyForm
+
 from django.views.decorators.http import require_GET, require_POST
 
 from .models import (
@@ -15,6 +21,7 @@ from .models import (
     FAQ,
     SavedLocation,
 )
+
 
 from .forms import (
     TransportationSurveyForm,
@@ -204,14 +211,15 @@ def emission_dashboard(request):
         context
     )
 
+
 def show_faq(request):
-    faq_list = FAQ.objects.filter(is_active=True)
+    faq_list = FAQ.objects.filter(
+        is_active=True
+    ).order_by("order", "id")
 
-    context = {
+    return render(request, "faq.html", {
         "faq_list": faq_list,
-    }
-
-    return render(request, "faq.html", context)
+    })
 
 def get_faq_json(request):
     faqs = FAQ.objects.all()
@@ -236,6 +244,86 @@ def show_about(request):
     }
 
     return render(request, "about.html", context)
+
+
+
+def admin_dashboard(request):
+    # Data dummy (contoh)
+    context = {
+        'admin_name' : 'Sofie',
+        'npm' : '12345',
+        'total_pengguna' : 5,
+        'total_emisi' : '3.482',
+        'aktivitas_hari_ini' : 542,
+        'total_kota' : 12,
+    }
+    return render(request, "admin-templates/admin-dashboard.html", context)
+
+def kelola_pengguna(request):
+    return render(request, "admin-templates/kelola-pengguna.html")
+
+## @login_required
+def kelola_faq(request):
+    faq_list = FAQ.objects.all().order_by("order", "id")
+    context = {
+        "faq_list": faq_list,
+        "admin_name": (
+            request.user.get_full_name() or request.user.username
+            if request.user.is_authenticated
+            else "Administrator"
+        ),
+    }
+
+    return render(request, "admin-templates/kelola-faq.html", context)
+
+## @login_required
+@require_POST
+def add_faq(request):
+    question = request.POST.get("question", "").strip()
+    answer = request.POST.get("answer", "").strip()
+
+    if not question or not answer:
+        messages.error(request, "Pertanyaan dan jawaban wajib diisi.")
+        return redirect('main:kelola_faq')
+    
+
+    FAQ.objects.create (
+        question=question,
+        answer=answer,
+        order=(FAQ.objects.order_by("-order").values_list("order", flat=True).first() or 0) + 1,
+        is_active=True,
+    )
+
+    messages.success(request, "FAQ berhasil ditambahkan.")
+    return redirect('main:kelola_faq')
+
+## @login_required
+@require_POST
+def edit_faq(request, faq_id):
+    faq = get_object_or_404(FAQ, id=faq_id)
+
+    question = request.POST.get("question", "").strip()
+    answer = request.POST.get("answer", "").strip()
+
+    if not question or not answer:
+        messages.error(request, "Pertanyaan dan jawaban wajib diisi.")
+        return redirect("main:kelola_faq")
+
+    faq.question = question
+    faq.answer = answer
+    faq.save()
+
+    messages.success(request, "FAQ berhasil diperbarui")
+    return redirect("main:kelola_faq")
+
+## @login_required
+@require_POST
+def delete_faq(request, faq_id):
+    faq = get_object_or_404(FAQ, id=faq_id)
+    faq.delete()
+
+    messages.success(request, "FAQ berhasil dihapus.")
+    return redirect('main:kelola_faq')
 
 @login_required
 @require_GET
@@ -431,3 +519,4 @@ def delete_location(request, location_id):
         "status": "success",
         "was_active": was_active
     })
+

@@ -39,8 +39,51 @@ from .weather_logic import (
 def show_home(request):
     return render(request, "home.html")
 
+def get_weekly_target_summary(user, target_goal_pct=10.0):
+    today = timezone.now().date()
+    seven_days_ago = today - timedelta(days=7)
+    fourteen_days_ago = today - timedelta(days=14)
+
+    this_week_raw = DailyEmissionLog.objects.filter(
+        user=user, date__gte=seven_days_ago
+    ).aggregate(total=Sum('total_emission_co2'))['total']
+    this_week = float(this_week_raw) if this_week_raw is not None else 0.0
+
+    last_week_raw = DailyEmissionLog.objects.filter(
+        user=user, date__gte=fourteen_days_ago, date__lt=seven_days_ago
+    ).aggregate(total=Sum('total_emission_co2'))['total']
+    last_week = float(last_week_raw) if last_week_raw is not None else 0.0
+
+    co2_reduced_kg = max(0.0, last_week - this_week)
+    actual_reduction_pct = ((last_week - this_week) / last_week * 100) if last_week > 0 else 0.0
+    is_achieved = actual_reduction_pct >= target_goal_pct
+
+    return {
+        'co2_reduced_kg': round(co2_reduced_kg, 2),
+        'target_goal_pct': round(target_goal_pct, 1),
+        'actual_reduction_pct': round(actual_reduction_pct, 1),
+        'is_achieved': is_achieved
+    }
+
 def show_dashboard(request):
-    return render(request, "dashboard-templates/dashboard.html")
+
+    target_weekly = get_weekly_target_summary(request.user)
+
+    recommendations = []
+
+    if target_weekly["is_achieved"]:
+        recommendations.append("Target minggu ini telah tercapai! Pertahankan pola mobilitas rendah emisi ini.")
+    elif target_weekly["actual_reduction_pct"] > 0:
+        recommendations.append(f"Sedikit lagi! Kamu sudah memotong {round(target_weekly['actual_reduction_pct'], 1)}% emisi minggu ini.")
+    else:
+        recommendations.append("Emisi masih lebih tinggi dari minggu lalu. Coba gunakan transportasi umum.")
+    # soon to be done (perhitungan rekomendasi akan membutuhkan model transportasi, alat elektronik-missing, barang reusable-missing)
+
+    context = {
+        'target_data': target_weekly,
+        'recommendations': recommendations  
+    }
+    return render(request, "dashboard-templates/dashboard.html", context)
 
 @login_required
 def show_dashboard_survey(request):

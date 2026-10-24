@@ -69,7 +69,7 @@ class DailyEmissionLog(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.date}: {self.total_emission_co2} kg CO₂"
-# Create your models here.
+
 class FAQ(models.Model):
     question = models.CharField(max_length=255)
     answer = models.TextField()
@@ -106,4 +106,37 @@ class SavedLocation(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.latitude:.5f}, {self.longitude:.5f})"
+
+class ReusableItemSurvey(models.Model):
+    ITEM_CHOICES = [
+        ('botol_minum', 'Botol Minum'),
+        ('tote_bag', 'Tote Bag'),
+        ('kotak_makan', 'Kotak Makan'),
+        ('alat_makan', 'Alat Makan'),
+    ]
+
+    EMISSION_FACTORS = {
+        'botol_minum':0.010,
+        'tote_bag': 0.020,
+        'kotak_makan': 0.005,
+        'alat_makan': 0.003,
+    }
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reusable_surveys')
+
+    item_type = models.CharField(max_length=20, choices=ITEM_CHOICES, default='botol_minum',)
+    quantity = models.PositiveIntegerField(default=1, validators=[MinValueValidator(1)])
+    uses_per_week= models.PositiveIntegerField(default=7, validators=[MinValueValidator(1)])
+    notes = models.CharField(max_length=255, blank=True, null=True)
+    daily_emission_co2 = models.DecimalField(max_digits=8, decimal_places=3, default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        factor = self.EMISSION_FACTORS.get(self.item_type, 0.0)
+        self.daily_emission_co2 = round(self.quantity * self.uses_per_week * factor/7, 3)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.get_item_type_display()} ({self.quantity})"
 

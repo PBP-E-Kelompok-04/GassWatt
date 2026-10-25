@@ -21,7 +21,7 @@
     <!-- Navigasi Kategori Survey (Tabs) -->
     <nav class="survey-tabs">
         <a href="#" class="survey-tab">
-            Perangkat Listrik
+            <span>⚡</span> Perangkat Listrik
         </a>
         <a href="#" class="survey-tab active">
             <span>🚆</span> Transportasi
@@ -89,6 +89,54 @@
 
     </section>
 
+    <section class="transport-card hidden" id="electricityPanel">
+        <div class="transport-card-header">
+            <h2><span>⚡</span> Perangkat Listrik</h2>
+            <button type="button" class="btn-add-transport" id="btnOpenAddElectricityModal">
+                Tambah Perangkat <span class="plus-icon">+</span>
+            </button>
+        </div>
+
+        <p class="electricity-help">
+            Masukkan pemakaian perangkat listrik per hari. Gunakan daya Watt yang kamu miliki jika tersedia.
+        </p>
+
+        <div class="transport-table-wrapper" id="electricityTableWrapper">
+            <div id="electricityLoadingState" class="state-container hidden">
+                <div class="spinner"></div><p>Memuat data listrik...</p>
+            </div>
+            <div id="electricityErrorState" class="state-container hidden">
+                <span class="state-icon">⚠️</span>
+                <p>Gagal memuat data listrik.</p>
+                <button type="button" class="btn-retry" id="btnRetryElectricity">Coba Lagi</button>
+            </div>
+            <div id="electricityEmptyState" class="state-container hidden">
+                <span class="state-icon">⚡</span><h3>Belum Ada Perangkat Listrik</h3>
+                <p>Tambahkan perangkat yang biasa kamu gunakan setiap hari.</p>
+            </div>
+            <div class="electricity-table-scroll">
+                <table class="transport-table" id="electricityTable">
+                    <thead>
+                        <tr>
+                            <th>Perangkat</th><th>Jumlah</th><th>Daya (W)</th>
+                            <th>Jam</th><th>kWh</th>
+                            <th>Emisi (kg CO₂e/hari)</th><th>AKSI</th>
+                        </tr>
+                    </thead>
+                    <tbody id="electricityTableBody"></tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="5">Total emisi listrik harian</th>
+                            <th id="electricityTotalEmission">0,00</th>
+                            <th></th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            {% include 'components/electricityComponent.html' %}
+        </div>
+    </section>
+
 </div>
 
 <div
@@ -98,5 +146,12 @@
     data-edit-url-template="{% url 'main:edit_transport_survey' '00000000-0000-0000-0000-000000000000' %}"
     data-delete-url-template="{% url 'main:delete_transport_survey' '00000000-0000-0000-0000-000000000000' %}">
 </div>
+<div id="electricityConfig"
+    data-list-url="{% url 'main:survey_electricity_list_json' %}"
+    data-add-url="{% url 'main:add_electricity_survey' %}"
+    data-edit-url-template="{% url 'main:edit_electricity_survey' '00000000-0000-0000-0000-000000000000' %}"
+    data-delete-url-template="{% url 'main:delete_electricity_survey' '00000000-0000-0000-0000-000000000000' %}">
+</div>
 <script src="{% static 'js/survey-ajax.js' %}"></script>
+<script src="{% static 'js/survey-electricity.js' %}"></script>
 {% endblock %}

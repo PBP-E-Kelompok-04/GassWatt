@@ -13,6 +13,7 @@ const errorState = document.getElementById('errorState');
 const emptyState = document.getElementById('emptyState');
 const transportTable = document.getElementById('transportTable');
 const transportTableBody = document.getElementById('transportTableBody');
+const transportTotalEmission = document.getElementById('transportTotalEmission');
 
 // Elemen Modals & Form
 const surveyModal = document.getElementById('surveyModal');
@@ -122,12 +123,16 @@ async function fetchSurveys() {
 
         if (!result.data || result.data.length === 0) {
             transportTableBody.innerHTML = '';
+            transportTotalEmission.textContent = '0,00';
             displayPageSection({ showEmpty: true });
         } else {
             transportTableBody.innerHTML = '';
+            let totalEmission = 0;
             result.data.forEach(item => {
                 transportTableBody.appendChild(buildSurveyRowElement(item));
+                totalEmission += Number(item.daily_emission_co2) || 0;
             });
+            transportTotalEmission.textContent = totalEmission.toFixed(2).replace('.', ',');
             displayPageSection({ showTable: true });
         }
     } catch (error) {

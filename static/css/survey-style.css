@@ -477,6 +477,18 @@
     transition: all 0.2s ease;
 }
 
+.btn-danger {
+    background-color: #dc2626;
+    color: #ffffff;
+    border: 1px solid #d1d5db;
+    padding: 0.625rem 1.25rem;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
 .btn-secondary:hover {
     background-color: #f3f4f6;
     border-color: #9ca3af;
@@ -496,6 +508,73 @@
 
 .btn-primary:hover {
     background-color: #009630;
+}
+
+#electricityPanel .electricity-help {
+    margin: 0 24px 12px;
+    color: #527062;
+    font-size: 14px;
+    line-height: 1.55;
+}
+
+#electricityPanel .electricity-table-scroll { 
+    width: 100%; 
+    overflow-x: auto; 
+}
+
+#electricityTable { 
+    width: 100%; 
+    min-width: 820px; 
+    table-layout: auto; 
+}
+
+#electricityTable th { 
+    width: auto; 
+}
+
+#electricityTable tfoot th { 
+    background: #f0faf4; 
+    font-weight: 700; 
+}
+
+#electricityPanel .btn-icon { 
+    font-size: 13px; 
+    font-weight: 650; 
+    padding: 5px; 
+}
+
+#electricityPanel .btn-edit { 
+    color: #13865d; 
+}
+
+#electricityPanel .btn-delete { 
+    color: #dc2626; 
+}
+
+#electricityModal .modal-card, #electricityDeleteModal .modal-card {
+    max-height: calc(100dvh - 32px);
+    overflow-y: auto;
+}
+
+#electricityModal .electricity-hint {
+    font-size: 13px;
+    color: #567266;
+    line-height: 1.5;
+}
+
+#electricityPanel.hidden, #electricityModal.hidden, #electricityDeleteModal.hidden,
+#customDeviceNameGroup.hidden { 
+    display: none !important; 
+}
+
+#electricityModal .modal-card {
+    max-height: 90vh;
+    overflow-y: auto;
+    scrollbar-width: none;
+}
+
+#electricityModal .modal-card::-webkit-scrollbar {
+    display: none;
 }
 
 /* =========================
@@ -551,5 +630,9 @@
     .transport-table td {
         padding: 14px 8px;
         font-size: 13px;
+    }
+
+    #electricityPanel .electricity-help { 
+        margin: 0 16px 12px; 
     }
 }

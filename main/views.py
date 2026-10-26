@@ -65,10 +65,9 @@ def get_weekly_target_summary(user, target_goal_pct=10.0):
     }
 
 def show_dashboard(request):
+    recommendations = []
 
     target_weekly = get_weekly_target_summary(request.user)
-
-    recommendations = []
 
     if target_weekly["is_achieved"]:
         recommendations.append("Target minggu ini telah tercapai! Pertahankan pola mobilitas rendah emisi ini.")
@@ -76,11 +75,59 @@ def show_dashboard(request):
         recommendations.append(f"Sedikit lagi! Kamu sudah memotong {round(target_weekly['actual_reduction_pct'], 1)}% emisi minggu ini.")
     else:
         recommendations.append("Emisi masih lebih tinggi dari minggu lalu. Coba gunakan transportasi umum.")
-    # soon to be done (perhitungan rekomendasi akan membutuhkan model transportasi, alat elektronik-missing, barang reusable-missing)
 
+    transportation_survey = TransportationSurvey.objects.filter(user=request.user)
+
+    for transport in transportation_survey:
+        mode = transport.transport_mode
+        mode_display = transport.get_transport_mode_display()
+        dist = float(transport.daily_distance_km)
+        co2 = float(transport.daily_emission_co2)
+
+        if dist <= 2.0 and mode != 'walk_bike':
+            recommendations.append(
+                f"Penggunaan {mode_display} dengan jarak {dist} km tergolong dekat. Berjalan kaki atau bersepeda bisa menghemat 100% emisi harianmu ({co2:.2f} kg CO₂e)."
+            )
+        elif dist > 10.0 and mode not in ['krl_mrt_lrt', 'busway']:
+            recommendations.append(
+                f"Perjalanan sejauh {dist} km menggunakan {mode_display} menghasilkan emisi cukup tinggi ({co2:.2f} kg CO₂e). Coba beralih ke KRL, MRT, atau Busway untuk menekan emisi."
+            )
+        elif mode in ['motor_ice', 'car_ice']:
+            vehicle_type = "Motor" if mode == 'motor_ice' else "Mobil"
+            recommendations.append(
+                f"Kamu menggunakan {vehicle_type} bensin. Beralih ke {vehicle_type} listrik (EV) dapat memotong emisi harianmu hingga 60%."
+            )
+
+    electricity_survey = ElectricitySurvey.objects.filter(user=request.user)
+
+    for electric in electricity_survey:
+        device_type = electric.device_type
+        watts = float(electric.power_watts)
+        hours = electric.daily_usage_hours
+        qty = electric.quantity
+        label = electric.device_label()
+
+        if device_type == 'ac' and hours >= 8:
+            recommendations.append(
+                f"Penggunaan AC ({qty} unit) selama {hours} jam/hari menyedot emisi cukup tinggi. Atur suhu ke 24°C-25°C untuk menghemat energi."
+            )
+        elif watts >= 500.0 and device_type != 'refrigerator':
+            recommendations.append(
+                f"{label} menggunakan daya besar ({watts}W). Cabut steker saat tidak digunakan agar menghindari daya phantom."
+            )
+        elif device_type == 'lamp' and qty >= 3:
+            recommendations.append(
+                f"Kamu mencatat {qty} unit lampu. Pastikan sudah beralih ke lampu LED hemat energi dan matikan saat ruangan kosong."
+            )
+        elif hours >= 12 and device_type != 'refrigerator':
+            recommendations.append(
+                f"{label} menyala selama {hours} jam/hari. Mengurangi durasi pemakaian 1-2 jam sehari dapat menekan emisi harianmu."
+            )
+
+    # 4. Batasi maksimal 3 rekomendasi teratas agar dashboard tetap bersih
     context = {
         'target_data': target_weekly,
-        'recommendations': recommendations  
+        'recommendations': recommendations[:3]  
     }
     return render(request, "dashboard-templates/dashboard.html", context)
 

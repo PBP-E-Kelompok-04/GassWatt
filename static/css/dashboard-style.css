@@ -59,7 +59,7 @@
     border-radius: 50px;
     color: var(--green-900);
     font-weight: 600;
-    font-size: 20px;
+    font-size: 16px;
     transition: all 0.25s ease;
     border: none;
     background: transparent;
@@ -68,8 +68,8 @@
 }
 
 .nav-item img {
-    width: 48px;
-    height: 48px;
+    width: 24px;
+    height: 24px;
     transition: transform 0.2s ease;
 }
 
@@ -393,6 +393,7 @@
 /* Chart Card */
 .chart-card {
   flex: 1.2;
+  align-self: flex-start;
   background-color: #ffffff;
   border: 1px solid #d8e8dd;
   border-radius: 32px;

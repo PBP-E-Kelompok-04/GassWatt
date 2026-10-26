@@ -671,3 +671,94 @@ def delete_location(request, location_id):
         "was_active": was_active
     })
 
+def show_dashboard_suevey_reusable(request):
+    return render(request, "dashboard-templates/dashboard-survey-reusable.html", {"form": ReusableItemSurveyForm()})
+
+@login_required
+def survey_reusable_list_json(request):
+    items = ReusableItemSurvey.objects.filter(user=request.user).order_by("-created_at")
+    data = [
+        {
+            "id": str(item.id),
+            "item": item.get_item_type_display(),
+            "item_val": item.item_type,
+            "quantity": item.quantity,
+            "uses_per_week": item.uses_per_week,
+            "notes": item.notes or "",
+            "daily_emission_co2": float(item.daily_emission_co2),
+        }
+        for item in items
+    ]
+    return JsonResponse({"status": "success", "data": data})
+
+@login_required
+def show_dashboard_survey_reusable(request):
+    return render(
+        request,
+        "dashboard-templates/dashboard-survey-reusable.html",
+        {"form": ReusableItemSurveyForm()},
+    )
+ 
+ 
+@login_required
+def survey_reusable_list_json(request):
+    items = ReusableItemSurvey.objects.filter(user=request.user).order_by("-created_at")
+    data = [
+        {
+            "id": str(item.id),
+            "item": item.get_item_type_display(),
+            "item_val": item.item_type,
+            "quantity": item.quantity,
+            "uses_per_week": item.uses_per_week,
+            "notes": item.notes or "",
+            "daily_emission_co2": float(item.daily_emission_co2),
+        }
+        for item in items
+    ]
+    return JsonResponse({"status": "success", "data": data})
+ 
+ 
+@login_required
+def add_reusable_survey(request):
+    if request.method == "POST":
+        form = ReusableItemSurveyForm(request.POST)
+        if form.is_valid():
+            item = form.save(commit=False)
+            item.user = request.user
+            item.save()
+            _sync_daily_emission_logs(request.user)
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Data berhasil ditambahkan.'
+            }, status=201)
+        else:
+            return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
+ 
+    return JsonResponse({"status": "error", "message": "Method tidak diizinkan."}, status=405)
+
+@login_required
+def edit_reusable_survey(request, survey_id):
+    item = get_object_or_404(ReusableItemSurvey, id=survey_id, user=request.user)
+ 
+    if request.method == "POST":
+        form = ReusableItemSurveyForm(request.POST, instance=item)
+        if form.is_valid():
+            form.save()
+            _sync_daily_emission_logs(request.user)
+            return JsonResponse({'status': 'success', 'message': 'Data berhasil diperbarui.'}, status=200)
+        else:
+            return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
+ 
+    return JsonResponse({"status": "error", "message": "Method tidak diizinkan."}, status=405)
+ 
+ 
+@login_required
+def delete_reusable_survey(request, survey_id):
+    item = get_object_or_404(ReusableItemSurvey, id=survey_id, user=request.user)
+ 
+    if request.method == "POST":
+        item.delete()
+        _sync_daily_emission_logs(request.user)
+        return JsonResponse({'status': 'success', 'message': 'Data berhasil dihapus.'}, status=200)
+ 
+    return JsonResponse({"status": "error", "message": "Method tidak diizinkan."}, status=405)

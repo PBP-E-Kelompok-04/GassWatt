@@ -26,8 +26,8 @@
         <a href="#" class="survey-tab active">
             <span>🚆</span> Transportasi
         </a>
-        <a href="#" class="survey-tab">
-            Barang Reusable
+        <a href="{% url 'main: show_dashboard_survey_reusable' %}" class="survey-tab {% if active == 'reusable' %}active{% endif %}">
+            <span>🍀</span>Barang Reusable
         </a>
     </nav>
 

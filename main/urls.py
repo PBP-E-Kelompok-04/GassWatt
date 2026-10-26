@@ -1,31 +1,14 @@
 from django.urls import path
 
 from main.views import(
-    show_home,
-    show_dashboard, 
-    show_dashboard_survey, 
-    show_dashboard_weather, 
-    survey_transport_list_json,
-    add_transport_survey,
-    edit_transport_survey,
-    delete_transport_survey,
-    emission_dashboard,
-    show_faq,
-    show_about,
-    emission_chart_api,
-    admin_dashboard,
-    kelola_pengguna,
-    kelola_faq,
-    add_faq,
-    edit_faq,
-    delete_faq,
-    search_location_api, 
-    fetch_weather_api, 
-    list_locations, 
-    save_location, 
-    update_location, 
-    activate_location, 
-    delete_location,
+    show_home, show_dashboard, show_dashboard_survey, show_dashboard_weather, 
+    survey_transport_list_json, add_transport_survey, edit_transport_survey, delete_transport_survey,
+    survey_electricity_list_json, add_electricity_survey, edit_electricity_survey, delete_electricity_survey,
+    emission_dashboard, emission_chart_api,
+    show_faq, show_about,
+    admin_dashboard, kelola_pengguna, kelola_faq, add_faq, edit_faq, delete_faq,
+    search_location_api, fetch_weather_api, list_locations, 
+    save_location, update_location, activate_location, delete_location,
 )
 
 app_name = "main"
@@ -56,4 +39,8 @@ urlpatterns = [
     path('admin-portal/faq/add/', add_faq, name='add_faq'),
     path('admin-portal/<int:faq_id>/edit/', edit_faq, name='edit_faq'),
     path('admin-portal/<int:faq_id>/delete/', delete_faq, name='delete_faq'),
+    path("dashboard/survey/electricity/list/", survey_electricity_list_json, name="survey_electricity_list_json"),
+    path('dashboard/survey/electricity/add/', add_electricity_survey, name='add_electricity_survey'),
+    path('dashboard/survey/electricity/edit/<uuid:survey_id>/', edit_electricity_survey, name='edit_electricity_survey'),
+    path('dashboard/survey/electricity/delete/<uuid:survey_id>/', delete_electricity_survey, name='delete_electricity_survey'),
 ]

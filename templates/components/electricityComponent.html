@@ -1,0 +1,54 @@
+<div class="modal-overlay hidden" id="electricityDeleteModal">
+    <div class="modal-card text-center">
+        <h3>Hapus Perangkat?</h3>
+        <p>Yakin ingin menghapus data perangkat listrik ini?</p>
+        <div class="modal-actions">
+            <button type="button" class="btn-secondary" id="btnCancelElectricityDelete">Batal</button>
+            <button type="button" class="btn-danger" id="btnConfirmElectricityDelete">Hapus</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay hidden" id="electricityModal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 id="electricityModalTitle">Tambah Perangkat Listrik</h3>
+            <button type="button" class="btn-close-icon" id="btnCloseElectricityIcon"
+                    aria-label="Tutup">&times;</button>
+        </div>
+        <form id="electricityForm">
+            {% csrf_token %}
+            <input type="hidden" id="electricitySurveyId" name="survey_id">
+
+            <div class="form-group">
+                <label for="{{ electricity_form.device_type.id_for_label }}">Jenis Perangkat</label>
+                {{ electricity_form.device_type }}
+            </div>
+            <div class="form-group" id="deviceNameGroup">
+                <label for="{{ electricity_form.device_name.id_for_label }}">Nama Perangkat Lainnya</label>
+                {{ electricity_form.device_name }}
+            </div>
+            <div class="form-group">
+                <label for="{{ electricity_form.quantity.id_for_label }}">Jumlah Perangkat</label>
+                {{ electricity_form.quantity }}
+            </div>
+            <div class="form-group">
+                <label for="{{ electricity_form.power_watts.id_for_label }}">Daya rata-rata (Watt)</label>
+                {{ electricity_form.power_watts }}
+            </div>
+            <div class="form-group">
+                <label for="{{ electricity_form.daily_usage_hours.id_for_label }}">Lama Pemakaian (Jam/Hari)</label>
+                {{ electricity_form.daily_usage_hours }}
+            </div>
+            <div class="form-group">
+                <label for="{{ electricity_form.notes.id_for_label }}">Keterangan (opsional)</label>
+                {{ electricity_form.notes }}
+            </div>
+            <p class="electricity-hint">Ubahlah data sesuai dengan penggunaanmu</p>
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" id="btnCancelElectricity">Batal</button>
+                <button type="submit" class="btn-primary">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>

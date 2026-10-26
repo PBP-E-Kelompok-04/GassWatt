@@ -1,5 +1,5 @@
 from django import forms
-from .models import TransportationSurvey, SavedLocation
+from .models import ElectricitySurvey, TransportationSurvey, SavedLocation
 
 class TransportationSurveyForm(forms.ModelForm):
     class Meta:
@@ -23,6 +23,40 @@ class TransportationSurveyForm(forms.ModelForm):
                 'placeholder': 'Contoh: Rumah ke Stasiun'
             }),
         }
+
+class ElectricitySurveyForm(forms.ModelForm):
+    class Meta:
+        model = ElectricitySurvey
+        fields = ['device_type', 'device_name', 'quantity', 'power_watts',
+                  'daily_usage_hours', 'notes']
+        widgets = {
+            'device_type': forms.Select(attrs={'class': 'form-select'}),
+            'device_name': forms.TextInput(attrs={
+                'class': 'form-input', 'placeholder': 'Contoh: PC'
+            }),
+            'quantity': forms.NumberInput(attrs={
+                'class': 'form-input', 'min': '1', 'step': '1'
+            }),
+            'power_watts': forms.NumberInput(attrs={
+                'class': 'form-input', 'min': '0.01',
+                'placeholder': 'Contoh: 65'
+            }),
+            'daily_usage_hours': forms.NumberInput(attrs={
+                'class': 'form-input', 'min': '1', 'max': '24', 'step' : '1',
+                'placeholder': 'Contoh: 6'
+            }),
+            'notes': forms.TextInput(attrs={
+                'class': 'form-input', 'placeholder': 'Opsional'
+            }),
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get('device_type') == 'other' and not (
+            cleaned_data.get('device_name') or ''
+        ).strip():
+            self.add_error('device_name', 'Nama perangkat lainnya wajib diisi.')
+        return cleaned_data
 
 class LocationForm(forms.ModelForm):
     class Meta:

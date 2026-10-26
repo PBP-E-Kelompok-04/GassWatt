@@ -1,7 +1,6 @@
 import uuid
 from django.db import models
 from django.contrib.auth.models import User
-from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db.models import Q
 
@@ -53,6 +52,44 @@ class TransportationSurvey(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.get_transport_mode_display()} ({self.daily_distance_km} km)"
 
+class ElectricitySurvey(models.Model):
+    DEVICE_CHOICES = [
+        ('lamp', 'Lampu'),
+        ('fan', 'Kipas Angin'),
+        ('ac', 'AC'),
+        ('refrigerator', 'Kulkas'),
+        ('television', 'Televisi'),
+        ('laptop', 'Laptop'),
+        ('desktop', 'Komputer Desktop'),
+        ('washing_machine', 'Mesin Cuci'),
+        ('other', 'Perangkat Lainnya'),
+    ]
+
+    EMISSION_FACTOR_KG_PER_KWH = 0.717
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='electricity_surveys')
+    device_type = models.CharField(max_length=20, choices=DEVICE_CHOICES, default='lamp')
+    device_name = models.CharField(max_length=100, blank=True, null=True)
+    quantity = models.PositiveIntegerField(default=1, validators=[MinValueValidator(1)])
+    power_watts = models.DecimalField(max_digits=6, decimal_places=2, validators=[MinValueValidator(0.01)])
+    daily_usage_hours = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(24)])
+    notes = models.CharField(max_length=255, blank=True, null=True)
+    daily_emission_co2 = models.DecimalField(max_digits=8, decimal_places=3, default=0.000)
+    daily_consumption_kwh = models.DecimalField(max_digits=8, decimal_places=4, default=0, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        kwh = self.quantity * float(self.power_watts) * self.daily_usage_hours / 1000
+        self.daily_consumption_kwh = round(kwh, 4)
+        self.daily_emission_co2 = round(kwh * self.EMISSION_FACTOR_KG_PER_KWH, 3)
+        super().save(*args, **kwargs)
+
+    def device_label(self):
+        return self.device_name if self.device_type == 'other' else self.get_device_type_display()
+
+    def __str__(self):
+        return f'{self.user.username} - {self.device_label()} ({self.quantity} unit)'
 
 class DailyEmissionLog(models.Model):
     """
@@ -68,8 +105,8 @@ class DailyEmissionLog(models.Model):
         unique_together = ('user', 'date')
 
     def __str__(self):
-        return f"{self.user.username} - {self.date}: {self.total_emission_co2} kg CO₂"
-
+        return f"{self.user.username} - {self.date}: {self.total_emission_co2} kg CO₂"  
+        
 class FAQ(models.Model):
     question = models.CharField(max_length=255)
     answer = models.TextField()
@@ -83,11 +120,7 @@ class FAQ(models.Model):
         return self.question
 
 class SavedLocation(models.Model):
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="saved_locations",
-    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="saved_locations")
     name = models.CharField(max_length=255)
     latitude = models.FloatField(validators=[MinValueValidator(-90), MaxValueValidator(90)])
     longitude = models.FloatField(validators=[MinValueValidator(-180), MaxValueValidator(180)])

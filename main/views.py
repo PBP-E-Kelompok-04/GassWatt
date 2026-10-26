@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 import math
 
-
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError, transaction
 from django.db.models import Sum
@@ -12,12 +11,11 @@ from django.utils import timezone
 
 from django.contrib import messages
 
-from .forms import TransportationSurveyForm
-
 from django.views.decorators.http import require_GET, require_POST
 
 from .models import (
     TransportationSurvey,
+    ElectricitySurvey,
     DailyEmissionLog,
     FAQ,
     SavedLocation,
@@ -26,6 +24,7 @@ from .models import (
 
 from .forms import (
     TransportationSurveyForm,
+    ElectricitySurveyForm,
     LocationForm,
     LocationRenameForm,
 )
@@ -47,19 +46,24 @@ def show_dashboard_survey(request):
     return render(
         request,
         "dashboard-templates/dashboard-survey.html",
-        {"form": TransportationSurveyForm()},
+        {"form": TransportationSurveyForm(), "electricity_form": ElectricitySurveyForm()},
     )
 
-#@login_required
+@login_required
 def show_dashboard_weather(request):
     return render(request, "dashboard-templates/dashboard-weather.html")
 
 def _sync_daily_emission_logs(user):
     today = timezone.now().date()
 
-    current_total = TransportationSurvey.objects.filter(user=user).aggregate(
+    transport = TransportationSurvey.objects.filter(user=user).aggregate(
         total=Sum('daily_emission_co2')
-    )['total'] or 0.000
+    )['total'] or 0
+    electricity = ElectricitySurvey.objects.filter(user=user).aggregate(
+        total=Sum('daily_emission_co2')
+    )['total'] or 0
+
+    current_total = transport + electricity
 
     last_log = DailyEmissionLog.objects.filter(user=user).order_by('-date').first()
 
@@ -188,6 +192,61 @@ def delete_transport_survey(request, survey_id):
     }, status=405)
 
 @login_required
+@require_GET
+def survey_electricity_list_json(request):
+    surveys = ElectricitySurvey.objects.filter(user=request.user).order_by('-created_at')
+    return JsonResponse({
+        'status': 'success',
+        'data': [
+            {
+                'id': str(item.id),
+                'device_type': item.device_type,
+                'device_label': item.device_label(),
+                'device_name': item.device_name or '',
+                'quantity': item.quantity,
+                'power_watts': str(item.power_watts),
+                'daily_usage_hours': str(item.daily_usage_hours),
+                'daily_consumption_kwh': str(item.daily_consumption_kwh),
+                'daily_emission_co2': str(item.daily_emission_co2),
+                'notes': item.notes or '',
+            } for item in surveys
+        ],
+    })
+
+@login_required
+@require_POST
+def add_electricity_survey(request):
+    form = ElectricitySurveyForm(request.POST)
+    if not form.is_valid():
+        return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
+
+    item = form.save(commit=False)
+    item.user = request.user
+    item.save()
+    _sync_daily_emission_logs(request.user)
+    return JsonResponse({'status': 'success', 'message': 'Perangkat berhasil ditambahkan.'}, status=201)
+
+@login_required
+@require_POST
+def edit_electricity_survey(request, survey_id):
+    item = get_object_or_404(ElectricitySurvey, pk=survey_id, user=request.user)
+    form = ElectricitySurveyForm(request.POST, instance=item)
+    if not form.is_valid():
+        return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
+
+    form.save()
+    _sync_daily_emission_logs(request.user)
+    return JsonResponse({'status': 'success', 'message': 'Perangkat berhasil diperbarui.'})
+
+@login_required
+@require_POST
+def delete_electricity_survey(request, survey_id):
+    item = get_object_or_404(ElectricitySurvey, pk=survey_id, user=request.user)
+    item.delete()
+    _sync_daily_emission_logs(request.user)
+    return JsonResponse({'status': 'success', 'message': 'Perangkat berhasil dihapus.'})
+
+@login_required
 def emission_dashboard(request):
     user = request.user
     
@@ -216,18 +275,33 @@ def emission_dashboard(request):
         )['total'] or 0.0
     )
 
+    transport_daily = float(
+        TransportationSurvey.objects.filter(user=user).aggregate(
+            total=Sum('daily_emission_co2')
+        )['total'] or 0.0
+    )
+
+    electricity_daily = float(
+        ElectricitySurvey.objects.filter(user=user).aggregate(
+            total=Sum('daily_emission_co2')
+        )['total'] or 0.0
+    )
+
     # Akumulasi jarak 7 hari 
     total_7days_distance = daily_survey_distance * 7.0
 
     # Baseline 7 Hari jika seluruh perjalanan menggunakan Mobil Bensin (0.190 kg CO2/km)
-    baseline_7days_emission = total_7days_distance * 0.190
-    
+    transport_baseline_7days = total_7days_distance * 0.190
+    electricity_7days = electricity_daily * 7.0
+    baseline_7days_emission = transport_baseline_7days + electricity_7days
+    estimated_7days_emission = (transport_daily + electricity_daily) * 7.0
+
     # 1. Penghematan CO2 Seminggu (Baseline Mobil 7 Hari - Emisi Riil 7 Hari)
-    co2_saved_7days = max(0.0, baseline_7days_emission - total_7days_emission)
+    co2_saved_7days = max(0.0, transport_baseline_7days - transport_daily * 7.0)
 
     # 2. Eco Score Seminggu (Efisiensi emisi seminggu terakhir)
     if baseline_7days_emission > 0:
-        score = (1.0 - (total_7days_emission / baseline_7days_emission)) * 100
+        score = (1.0 - (estimated_7days_emission / baseline_7days_emission)) * 100
         eco_score = max(0, min(100, round(score)))
     else:
         eco_score = 100
@@ -251,7 +325,9 @@ def emission_dashboard(request):
         'co2_saved': round(co2_saved_7days, 1),            
         'eco_score': eco_score,                            
         'trees_saved': trees_saved,                        
-        'avoided_km': round(avoided_km_7days, 1),          
+        'avoided_km': round(avoided_km_7days, 1),    
+        'transport_emission_today': round(transport_daily, 1),
+        'electricity_emission_today': round(electricity_daily, 1),      
     }
     
     return render(request, 'dashboard-templates/dashboard-emission.html', context)
@@ -422,6 +498,7 @@ def search_location_api(request):
         }, status=502)
 
 @login_required
+@require_GET
 def fetch_weather_api(request):
     try:
         latitude = float(request.GET["lat"])

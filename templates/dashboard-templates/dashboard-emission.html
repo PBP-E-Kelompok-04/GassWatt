@@ -40,6 +40,25 @@
                 <h2>{{ eco_score }}/100</h2>
             </div>
         </article>
+        
+        <article class="summary-card">
+            <!-- <div class="summary-icon">◉</div> -->
+            <img src="{% static 'img/Car.png' %}" alt="gambar Speedometer" class="summary-icon">
+            <div>
+                <p>Emisi Transportasi</p>
+                <h2>{{ transport_emission_today|floatformat:1 }} kg CO₂e/hari</h2>
+            </div>
+        </article>
+
+        <article class="summary-card">
+            <!-- <div class="summary-icon">◉</div> -->
+            <img src="{% static 'img/Electricity.png' %}" alt="gambar Speedometer" class="summary-icon">
+            <div>
+                <p>Emisi Perangkat Listrik</p>
+                <h2>{{ electricity_emission_today|floatformat:1 }} kg CO₂e/hari</h2>
+            </div>
+        </article>
+
 
     </div>
 

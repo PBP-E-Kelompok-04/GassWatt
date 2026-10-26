@@ -6,10 +6,10 @@ from django.core.cache import cache
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import TransportationSurvey, SavedLocation
+from .models import TransportationSurvey, SavedLocation, ElectricitySurvey
 
 from . import weather_logic
-from .forms import LocationForm, LocationRenameForm
+from .forms import LocationForm, LocationRenameForm, ElectricitySurveyForm
 
 
 class TransportationSurveyFlowTests(TestCase):
@@ -146,7 +146,7 @@ class WeatherFlowTests(TestCase):
         ]
         for method, name, args, data in endpoints:
             with self.subTest(endpoint=name):
-                self.assertEqual(getattr(self.client, method)(self.url(name, *args), data).status_code, 401)
+                self.assertEqual(getattr(self.client, method)(self.url(name, *args), data).status_code, 302)
         self.client.force_login(self.user)
         response = self.client.get(self.url("show_dashboard_weather"))
         self.assertEqual(response.status_code, 200)
@@ -325,3 +325,80 @@ class WeatherFlowTests(TestCase):
         with patch("main.weather_logic.api_get", return_value={"current": {}}):
             with self.assertRaises(weather_logic.WeatherServiceError):
                 weather_logic.get_air_quality(-6.4, 106.8)
+
+class ElectricitySurveyTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='electric-user', password='test123')
+        self.client.force_login(self.user)
+        self.data = {
+            'device_type': 'laptop',
+            'device_name': '',
+            'quantity': '2',
+            'power_watts': '65',
+            'daily_usage_hours': '6',
+            'notes': 'Untuk kuliah',
+        }
+
+    def test_survey_page(self):
+        response = self.client.get(reverse('main:show_dashboard_survey'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="electricityForm"')
+
+    def test_emission_calculation(self):
+        item = ElectricitySurvey.objects.create(
+            user=self.user, device_type='laptop', quantity=2,
+            power_watts='65', daily_usage_hours=6
+        )
+        item.refresh_from_db()
+        self.assertAlmostEqual(float(item.daily_consumption_kwh), 0.78)
+        self.assertAlmostEqual(float(item.daily_emission_co2), 0.559)
+
+    def test_invalid_form(self):
+        data = self.data.copy()
+        data.update(device_type='other', device_name='')
+        form = ElectricitySurveyForm(data=data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('device_name', form.errors)
+
+        data = self.data.copy()
+        data['daily_usage_hours'] = '25'
+        self.assertFalse(ElectricitySurveyForm(data=data).is_valid())
+
+    def test_electricity_crud(self):
+        add = self.client.post(reverse('main:add_electricity_survey'), self.data)
+        self.assertEqual(add.status_code, 201)
+        item = ElectricitySurvey.objects.get(user=self.user)
+
+        listing = self.client.get(reverse('main:survey_electricity_list_json'))
+        self.assertEqual(listing.status_code, 200)
+        self.assertEqual(listing.json()['data'][0]['device_label'], 'Laptop')
+
+        edited = self.data.copy()
+        edited.update(power_watts='100', quantity='1')
+        update = self.client.post(reverse('main:edit_electricity_survey', args=[item.id]), edited)
+        self.assertEqual(update.status_code, 200)
+        item.refresh_from_db()
+        self.assertAlmostEqual(float(item.daily_consumption_kwh), 0.6)
+
+        delete = self.client.post(reverse('main:delete_electricity_survey', args=[item.id]))
+        self.assertEqual(delete.status_code, 200)
+        self.assertFalse(ElectricitySurvey.objects.filter(pk=item.id).exists())
+
+    def test_cannot_edit_or_delete_other_users_data(self):
+        other_user = User.objects.create_user(username='other-user', password='test123')
+        other_item = ElectricitySurvey.objects.create(
+            user=other_user, device_type='laptop', quantity=2,
+            power_watts='65', daily_usage_hours=6
+        )
+
+        listing = self.client.get(reverse('main:survey_electricity_list_json'))
+        self.assertEqual(listing.json()['data'], [])
+        self.assertEqual(
+            self.client.post(reverse('main:edit_electricity_survey', args=[other_item.id]), self.data).status_code,
+            404,
+        )
+        self.assertEqual(
+            self.client.post(reverse('main:delete_electricity_survey', args=[other_item.id])).status_code,
+            404,
+        )
+        self.assertTrue(ElectricitySurvey.objects.filter(pk=other_item.id).exists())

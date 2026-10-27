@@ -13,8 +13,10 @@
     <div class="dashboard-container" ondblclick="toggleSidebar()">
         <aside class="sidebar">
             <div class="brand">
-                <img src="{% static 'img/logo.png' %}" alt="GassWatt Logo" class="brand-logo" />
-                <span class="brand-name">GassWatt</span>
+                <a href="{% url 'main:show_home' %}" class="brand">
+                    <img src="{% static 'img/logo.png' %}" alt="GassWatt Logo" class="brand-logo" />
+                    <span class="brand-name">GassWatt</span>
+                </a>
             </div>
 
             <nav class="sidebar-nav">

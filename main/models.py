@@ -34,7 +34,11 @@ class TransportationSurvey(models.Model):
         choices=TRANSPORT_CHOICES, 
         default='motor_ice'
     )
-    daily_distance_km = models.DecimalField(max_digits=6, decimal_places=2)
+    daily_distance_km = models.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        validators=[MinValueValidator(0.0)]
+    )
     notes = models.CharField(max_length=255, blank=True, null=True)
     
     daily_emission_co2 = models.DecimalField(max_digits=8, decimal_places=2, default=0.000)

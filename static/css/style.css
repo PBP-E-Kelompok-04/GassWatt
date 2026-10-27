@@ -1,10 +1,4 @@
-/* =========================================================
-   GassWatt - style.css
-   Urutan: 1 Variables · 2 Base · 3 Layout · 4 Components
-           5 Header · 6 Footer · 7 Home page · 8 Responsive
-   ========================================================= */
-
-/* ---------- 1. VARIABLES ---------- */
+/* ---------- VARIABLES ---------- */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -324,7 +318,7 @@ a {
     border-bottom: 2px solid var(--green-600);
 }
 
-/* ---------- HEADER (base.html) ---------- */
+/* ---------- HEADER ---------- */
 .site-header {
     position: fixed;
     top: 24px;
@@ -420,7 +414,7 @@ a {
     color: #5b7d6c;
 }
 
-/* ---------- FOOTER (base.html) ---------- */
+/* ---------- FOOTER ---------- */
 .site-footer {
     padding: 20px 0 28px;
 }

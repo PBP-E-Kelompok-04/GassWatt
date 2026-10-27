@@ -26,7 +26,7 @@
         <a href="#" class="survey-tab active">
             <span>🚆</span> Transportasi
         </a>
-        <a href="{% url 'main: show_dashboard_survey_reusable' %}" class="survey-tab {% if active == 'reusable' %}active{% endif %}">
+        <a href="#" class="survey-tab">
             <span>🍀</span>Barang Reusable
         </a>
     </nav>
@@ -136,7 +136,52 @@
             {% include 'components/electricityComponent.html' %}
         </div>
     </section>
+    <section class="transport-card hidden" id="reusablePanel">
+        <div class="transport-card-header">
+            <h2><span>🍀</span> Barang Reusable </h2>
+            <button type="button" class="btn-add-transport" id="btnOpenAddReusableModal">
+                Tambah Barang <span class="plus-icon">+</span>
+            </button>
+        </div>
 
+        <p class="reusable-help">
+            Masukkan pemakaian barang reusable yang biasa kamu gunakan setiap hari.
+        </p>
+
+        <div class="transport-table-wrapper" id="reusableTableWrapper">
+            <div id="reusableLoadingState" class="state-container hidden">
+                <div class="spinner"></div><p>Memuat data barang reusable...</p>
+            </div>
+            <div id="reusableErrorState" class="state-container hidden">
+                <span class="state-icon">⚠️</span>
+                <p>Gagal memuat data barang reusable.</p>
+                <button type="button" class="btn-retry" id="btnRetryReusable">Coba Lagi</button>
+            </div>
+            <div id="reusableEmptyState" class="state-container hidden">
+                <span class="state-icon">🍀</span><h3>Belum Ada Barang Reusable</h3>
+                <p>Tambahkan barang reusable yang biasa kamu gunakan setiap hari.</p>
+            </div>
+            <div class="reusable-table-scroll">
+                <table class="transport-table" id="reusableTable">
+                    <thead>
+                        <tr>
+                            <th>Jenis Barang</th><th>Jumlah</th><th>Keterangan</th>
+                            <th>Emisi (kg CO₂e/hari)</th><th>AKSI</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reusableTableBody"></tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="3">Total emisi harian</th>
+                            <th id="reusableTotalEmission">0,00</th>
+                            <th></th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            {% include 'components/form_barang_reusable_modal.html' %}
+        </div>
+    </section>
 </div>
 
 <div
@@ -152,6 +197,13 @@
     data-edit-url-template="{% url 'main:edit_electricity_survey' '00000000-0000-0000-0000-000000000000' %}"
     data-delete-url-template="{% url 'main:delete_electricity_survey' '00000000-0000-0000-0000-000000000000' %}">
 </div>
+<div id="reusableConfig"
+    data-list-url="{% url 'main:survey_reusable_list_json' %}"
+    data-add-url="{% url 'main:add_reusable_survey' %}"
+    data-edit-url-template="{% url 'main:edit_reusable_survey' '00000000-0000-0000-0000-000000000000' %}"
+    data-delete-url-template="{% url 'main:delete_reusable_survey' '00000000-0000-0000-0000-000000000000' %}">
+</div>
 <script src="{% static 'js/survey-ajax.js' %}"></script>
 <script src="{% static 'js/survey-electricity.js' %}"></script>
+<script src="{% static 'js/survey-reusable.js' %}"></script>
 {% endblock %}

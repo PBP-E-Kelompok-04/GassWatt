@@ -1,0 +1,42 @@
+<div class="modal-overlay hidden" id="reusableDeleteModal">
+    <div class="modal-card text-center">
+        <h3>Hapus Barang?</h3>
+        <p>Apakah kamu yakin ingin menghapus data barang reusable ini?</p>
+        <div class="modal-actions">
+            <button type="button" class="btn-secondary" id="btnCancelReusableDelete">Batal</button>
+            <button type="button" class="btn-danger" id="btnConfirmReusableDelete">Hapus</button>
+        </div>
+    </div>
+</div>
+<div class="modal-overlay hidden" id="reusableModal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 id="reusableModalTitle">Tambah Barang Reusable</h3>
+            <button type="button" class="btn-close-icon" id="btnCloseReusableIcon">&times;</button>
+        </div>
+        <form id="reusableForm">
+            {% csrf_token %}
+            <input type="hidden" id="reusableSurveyId" name="survey_id" value="">
+            <div class="form-group">
+                <label for="{{ reusable_form.item_type.id_for_label }}">Jenis Barang</label>
+                {{ reusable_form.item_type }}
+            </div>
+            <div class="form-group">
+                <label for="{{ reusable_form.quantity.id_for_label }}">Jumlah Barang</label>
+                {{ reusable_reusable_form.quantity }}
+            </div>
+            <div class="form-group">
+                <label for="{{ reusable_form.uses_per_week.id_for_label }}">Dipakai berapa kali per minggu? (per barang)</label>
+                {{ reusable_form.uses_per_week }}
+            </div>
+            <div class="form-group">
+                <label for="{{ reusable_form.notes.id_for_label }}">Keterangan (opsional)</label>
+                {{ reusable_form.notes }}
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" id="btnCancelReusable">Batal</button>
+                <button type="submit" class="btn-primary" id="btnSave">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -16,6 +16,7 @@ from django.views.decorators.http import require_GET, require_POST
 from .models import (
     TransportationSurvey,
     ElectricitySurvey,
+    ReusableItemSurvey,
     DailyEmissionLog,
     FAQ,
     SavedLocation,
@@ -25,6 +26,7 @@ from .models import (
 from .forms import (
     TransportationSurveyForm,
     ElectricitySurveyForm,
+    ReusableItemSurveyForm,
     LocationForm,
     LocationRenameForm,
 )
@@ -46,7 +48,7 @@ def show_dashboard_survey(request):
     return render(
         request,
         "dashboard-templates/dashboard-survey.html",
-        {"form": TransportationSurveyForm(), "electricity_form": ElectricitySurveyForm()},
+        {"form": TransportationSurveyForm(), "electricity_form": ElectricitySurveyForm(), "reusable_form": ReusableItemSurveyForm()},
     )
 
 @login_required
@@ -62,8 +64,11 @@ def _sync_daily_emission_logs(user):
     electricity = ElectricitySurvey.objects.filter(user=user).aggregate(
         total=Sum('daily_emission_co2')
     )['total'] or 0
+    reusable = ReusableItemSurvey.objects.filter(user=user).aggregate(
+        total=Sum('daily_emission_co2')
+    )['total'] or 0
 
-    current_total = transport + electricity
+    current_total = transport + electricity + reusable
 
     last_log = DailyEmissionLog.objects.filter(user=user).order_by('-date').first()
 
@@ -671,12 +676,9 @@ def delete_location(request, location_id):
         "was_active": was_active
     })
 
-def show_dashboard_suevey_reusable(request):
-    return render(request, "dashboard-templates/dashboard-survey-reusable.html", {"form": ReusableItemSurveyForm()})
-
 @login_required
 def survey_reusable_list_json(request):
-    items = ReusableItemSurvey.objects.filter(user=request.user).order_by("-created_at")
+    surveys = ReusableItemSurvey.objects.filter(user=request.user).order_by("-created_at")
     data = [
         {
             "id": str(item.id),
@@ -687,36 +689,9 @@ def survey_reusable_list_json(request):
             "notes": item.notes or "",
             "daily_emission_co2": float(item.daily_emission_co2),
         }
-        for item in items
+        for item in surveys
     ]
-    return JsonResponse({"status": "success", "data": data})
-
-@login_required
-def show_dashboard_survey_reusable(request):
-    return render(
-        request,
-        "dashboard-templates/dashboard-survey-reusable.html",
-        {"form": ReusableItemSurveyForm()},
-    )
- 
- 
-@login_required
-def survey_reusable_list_json(request):
-    items = ReusableItemSurvey.objects.filter(user=request.user).order_by("-created_at")
-    data = [
-        {
-            "id": str(item.id),
-            "item": item.get_item_type_display(),
-            "item_val": item.item_type,
-            "quantity": item.quantity,
-            "uses_per_week": item.uses_per_week,
-            "notes": item.notes or "",
-            "daily_emission_co2": float(item.daily_emission_co2),
-        }
-        for item in items
-    ]
-    return JsonResponse({"status": "success", "data": data})
- 
+    return JsonResponse({"status": "success", "data": data})  
  
 @login_required
 def add_reusable_survey(request):

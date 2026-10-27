@@ -1,5 +1,5 @@
 from django import forms
-from .models import ElectricitySurvey, TransportationSurvey, SavedLocation
+from .models import TransportationSurvey, SavedLocation, ReusableItemSurvey, ElectricitySurvey
 
 class TransportationSurveyForm(forms.ModelForm):
     class Meta:
@@ -85,3 +85,13 @@ class LocationForm(forms.ModelForm):
 class LocationRenameForm(forms.ModelForm):
     class Meta(LocationForm.Meta):
         fields = ["name"]
+
+class ReusableItemSurveyForm(forms.ModelForm):
+    class Meta:
+        model = ReusableItemSurvey
+        fields = ["item_type", "quantity", "uses_per_week", "notes"]
+        widgets = {
+            "quantity":forms.NumberInput(attrs={"min":1}),
+            "uses_per_week": forms.NumberInput(attrs={"min":1}),
+            "notes": forms.TextInput(attrs={"placeholder": "Contoh: Botol stainless 750ml"}),
+        }

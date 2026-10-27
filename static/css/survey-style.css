@@ -590,6 +590,53 @@
     display: none;
 }
 
+#reusablePanel .reusable-help {
+    margin: 0 24px 12px;
+    color: #527062;
+    font-size: 14px;
+    line-height: 1.55;
+}
+
+#reusablePanel .reusable-table-scroll {
+    width: 100%;
+    overflow-x: auto;
+}
+
+#reusableTable {
+    width: 100%;
+    min-width: 640px;
+    table-layout: auto;
+}
+
+#reusableTable th {
+    width: auto;
+}
+
+#reusableTable tfoot th {
+    background: #f0faf4;
+    font-weight: 700;
+}
+
+#reusablePanel .btn-icon {
+    font-size: 13px;
+    font-weight: 650;
+    padding: 5px;
+}
+
+#reusablePanel .btn-edit {
+    color: #13865d;
+}
+
+#reusablePanel .btn-delete {
+    color: #dc2626;
+}
+
+#reusableModal .modal-card,
+#reusableDeleteModal .modal-card {
+    max-height: calc(100dvh - 32px);
+    overflow-y: auto;
+}
+
 /* =========================
    RESPONSIVE
 ========================= */
@@ -645,7 +692,8 @@
         font-size: 13px;
     }
 
-    #electricityPanel .electricity-help {
-        margin: 0 16px 12px;
+    #electricityPanel .electricity-help,
+    #reusablePanel .reusable-help { 
+        margin: 0 16px 12px; 
     }
 }

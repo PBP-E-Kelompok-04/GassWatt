@@ -1,10 +1,4 @@
-/* =========================================================
-   GassWatt - style.css
-   Urutan: 1 Variables · 2 Base · 3 Layout · 4 Components
-           5 Header · 6 Footer · 7 Home page · 8 Responsive
-   ========================================================= */
-
-/* ---------- 1. VARIABLES ---------- */
+/* ---------- VARIABLES ---------- */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -235,7 +229,7 @@ html, body {
     --green-500: #00b300;
     --green-100: #d9f0d4;
     --orange: #f4a261;
-    --glass: rgba(255, 255, 255, 0.65);
+    --glass: rgba(255, 255, 255, 0.5);
     --page-glow: 
         radial-gradient(ellipse 45% 40% at 100% 0%, #a3d94c 0%, rgba(163, 217, 76, 0) 100%),
         radial-gradient(ellipse 40% 45% at 12% 52%, #a6dba0 0%, rgba(166, 219, 160, 0) 100%);
@@ -252,6 +246,7 @@ html, body {
 body {
     margin: 0;
     min-height: 100vh;
+    padding-top: 92px;
     font-family: var(--font-main);
     color: #111;
     background:
@@ -323,9 +318,18 @@ a {
     border-bottom: 2px solid var(--green-600);
 }
 
-/* ---------- 5. HEADER (base.html) ---------- */
+/* ---------- HEADER ---------- */
 .site-header {
-    padding-top: 24px;
+    position: fixed;
+    top: 24px;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    transition: top 0.3s ease;
+}
+
+.site-header .container {
+    transition: max-width 0.35s ease;
 }
 
 .header-inner {
@@ -337,6 +341,22 @@ a {
     border-radius: 999px;
     background: var(--glass);
     backdrop-filter: blur(6px);
+    transition: padding 0.35s ease, background 0.35s ease, box-shadow 0.35s ease;
+}
+
+.site-header.is-scrolled .container {
+    max-width: 920px;
+}
+
+.site-header.is-scrolled .header-inner {
+    padding: 10px 20px;
+    background: var(--glass);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 6px 24px rgba(14, 61, 42, 0.12);
+}
+
+.site-header.is-scrolled .nav {
+    gap: 28px;
 }
 
 .brand {
@@ -360,6 +380,7 @@ a {
     display: flex;
     align-items: center;
     gap: 44px;
+    transition: gap 0.35s ease;
 }
 
 .nav-link {
@@ -393,7 +414,7 @@ a {
     color: #5b7d6c;
 }
 
-/* ---------- FOOTER (base.html) ---------- */
+/* ---------- FOOTER ---------- */
 .site-footer {
     padding: 20px 0 28px;
 }
@@ -733,6 +754,10 @@ body.page-about {
         justify-content: center;
         padding: 12px;
         border-radius: 50%;
+    }
+
+    .body {
+        padding-top: 150px;
     }
 
     .main-content {

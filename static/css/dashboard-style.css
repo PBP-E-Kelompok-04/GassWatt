@@ -493,6 +493,14 @@
   text-align: center;
 }
 
+body:has(.dashboard-container) {
+    padding-top: 0;
+}
+
+body.dashboard-page {
+    padding-top: 0;
+}
+
 @media (max-width: 900px) {
     .sidebar {
         width: 80px; 

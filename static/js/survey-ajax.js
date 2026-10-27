@@ -161,6 +161,11 @@ function openEditSurveyModal(item) {
 
 function openDeleteModal(id) {
     activeDeleteId = id;
+
+    deleteModal.dataset.mode = 'transport';
+    deleteModal.querySelector('h3').textContent = 'Hapus Data?';
+    deleteModal.querySelector('p').textContent = 'Apakah kamu yakin ingin menghapus data transportasi ini?';
+    
     closeModal(surveyModal);
     openModal(deleteModal);
 }

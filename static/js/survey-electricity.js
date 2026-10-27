@@ -16,7 +16,6 @@ const electricityTableBody = document.getElementById('electricityTableBody');
 const electricityTotalEmission = document.getElementById('electricityTotalEmission');
 
 const electricityModal = document.getElementById('electricityModal');
-const electricityDeleteModal = document.getElementById('electricityDeleteModal');
 const electricityForm = document.getElementById('electricityForm');
 const electricitySurveyId = document.getElementById('electricitySurveyId');
 const electricityModalTitle = document.getElementById('electricityModalTitle');
@@ -166,14 +165,19 @@ function openEditElectricityModal(item) {
 
     updateElectricityCustomField();
     electricityModalTitle.textContent = 'Edit Perangkat Listrik';
-    closeModal(electricityDeleteModal);
+    closeModal(deleteModal);
     openModal(electricityModal);
 }
 
 function openDeleteElectricityModal(id) {
     activeElectricityDeleteId = id;
+
+    deleteModal.dataset.mode = 'electricity';
+    deleteModal.querySelector('h3').textContent = 'Hapus Perangkat?';
+    deleteModal.querySelector('p').textContent = 'Yakin ingin menghapus data perangkat listrik ini?';
+
     closeModal(electricityModal);
-    openModal(electricityDeleteModal);
+    openModal(deleteModal);
 }
 
 async function handleElectricitySurveySubmit(event) {
@@ -224,7 +228,7 @@ async function executeElectricityDeleteAjax(event) {
     event.preventDefault();
     if (!activeElectricityDeleteId) return;
 
-    const deleteButton = document.getElementById('btnConfirmElectricityDelete');
+    const deleteButton = document.getElementById('btnConfirmDelete');
     if (deleteButton.disabled) return;
     deleteButton.disabled = true;
 
@@ -246,7 +250,7 @@ async function executeElectricityDeleteAjax(event) {
         const result = await response.json().catch(() => ({}));
 
         if (response.ok && result.status === 'success') {
-            closeModal(electricityDeleteModal);
+            closeModal(deleteModal);
             activeElectricityDeleteId = null;
             fetchElectricitySurveys();
         } else {
@@ -269,9 +273,13 @@ function selectElectricityTab(showElectricity) {
 
 if (electricityForm) electricityForm.addEventListener('submit', handleElectricitySurveySubmit);
 
-const btnConfirmElectricityDelete = document.getElementById('btnConfirmElectricityDelete');
-if (btnConfirmElectricityDelete) {
-    btnConfirmElectricityDelete.addEventListener('click', executeElectricityDeleteAjax);
+if (btnConfirmDelete) {
+    btnConfirmDelete.addEventListener('click', (event) => {
+        if (deleteModal.dataset.mode !== 'electricity') return;
+        
+        event.stopImmediatePropagation();
+        executeElectricityDeleteAjax(event);
+    }, true);
 }
 
 const btnCancelElectricity = document.getElementById('btnCancelElectricity');
@@ -284,9 +292,8 @@ if (btnCloseElectricityIcon) {
     btnCloseElectricityIcon.addEventListener('click', () => closeModal(electricityModal));
 }
 
-const btnCancelElectricityDelete = document.getElementById('btnCancelElectricityDelete');
-if (btnCancelElectricityDelete) {
-    btnCancelElectricityDelete.addEventListener('click', () => closeModal(electricityDeleteModal));
+if (btnCancelDelete) {
+    btnCancelDelete.addEventListener('click', () => closeModal(deleteModal));
 }
 
 if (electricityModal) {
@@ -294,9 +301,10 @@ if (electricityModal) {
         if (event.target === electricityModal) closeModal(electricityModal);
     });
 }
-if (electricityDeleteModal) {
-    electricityDeleteModal.addEventListener('click', function (event) {
-        if (event.target === electricityDeleteModal) closeModal(electricityDeleteModal);
+
+if (deleteModal) {
+    deleteModal.addEventListener('click', function (event) {
+        if (event.target === deleteModal) closeModal(deleteModal);
     });
 }
 
@@ -312,7 +320,7 @@ if (btnOpenAddElectricityModal) {
         electricityForm.elements.namedItem('daily_usage_hours').value = 4;
         updateElectricityExamplePower();
         electricityModalTitle.textContent = 'Tambah Perangkat Listrik';
-        closeModal(electricityDeleteModal);
+        closeModal(deleteModal);
         openModal(electricityModal);
     });
 }
@@ -326,6 +334,7 @@ if (electricityTab) {
         selectElectricityTab(true);
     });
 }
+
 if (transportTab) {
     transportTab.addEventListener('click', (event) => {
         event.preventDefault();
@@ -334,5 +343,4 @@ if (transportTab) {
 }
 
 updateElectricityCustomField();
-selectElectricityTab(window.location.hash === '#electricity');
 fetchElectricitySurveys();

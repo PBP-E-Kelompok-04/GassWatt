@@ -11,6 +11,7 @@
     box-sizing: border-box;
     color: #104b35;
     font-family: inherit;
+    z-index: 2;
 }
 
 /* Sapaan dan judul */
@@ -199,6 +200,11 @@
 
 .transport-table tbody tr:hover {
     background: #f7fbf7;
+}
+
+#transportTable tfoot th {
+    background: #f0faf4;
+    font-weight: 700;
 }
 
 /* Tombol edit dan hapus */
@@ -511,44 +517,51 @@
 }
 
 #electricityPanel .electricity-help {
-    margin: 0 24px 12px;
+    margin: 0 24px 16px;
     color: #527062;
     font-size: 14px;
     line-height: 1.55;
 }
 
-#electricityPanel .electricity-table-scroll { 
-    width: 100%; 
-    overflow-x: auto; 
+#electricityPanel {
+    border: 1px solid #d8e8dd;
+    box-shadow: 0 8px 24px -8px rgba(22, 137, 93, 0.08);
 }
 
-#electricityTable { 
-    width: 100%; 
-    min-width: 820px; 
-    table-layout: auto; 
+#electricityPanel .electricity-table-scroll {
+    width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
 }
 
-#electricityTable th { 
-    width: auto; 
+#electricityTable {
+    width: 100%;
+    min-width: 820px;
+    table-layout: auto;
 }
 
-#electricityTable tfoot th { 
-    background: #f0faf4; 
-    font-weight: 700; 
+#electricityTable th {
+    width: auto;
 }
 
-#electricityPanel .btn-icon { 
-    font-size: 13px; 
-    font-weight: 650; 
-    padding: 5px; 
+#electricityTable tfoot th {
+    background: #f0faf4;
+    font-weight: 700;
 }
 
-#electricityPanel .btn-edit { 
-    color: #13865d; 
+#electricityPanel .btn-icon {
+    font-size: 13px;
+    font-weight: 650;
+    padding: 5px;
 }
 
-#electricityPanel .btn-delete { 
-    color: #dc2626; 
+#electricityPanel .btn-edit {
+    color: #13865d;
+}
+
+#electricityPanel .btn-delete {
+    color: #dc2626;
 }
 
 #electricityModal .modal-card, #electricityDeleteModal .modal-card {
@@ -563,7 +576,7 @@
 }
 
 #electricityPanel.hidden, #electricityModal.hidden, #electricityDeleteModal.hidden,
-#customDeviceNameGroup.hidden { 
+#customDeviceNameGroup.hidden {
     display: none !important; 
 }
 
@@ -632,7 +645,7 @@
         font-size: 13px;
     }
 
-    #electricityPanel .electricity-help { 
-        margin: 0 16px 12px; 
+    #electricityPanel .electricity-help {
+        margin: 0 16px 12px;
     }
 }

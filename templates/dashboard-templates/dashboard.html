@@ -1,11 +1,101 @@
 {% extends "dashboard-templates/dashboard-base.html" %}
+{% load static %}
 
 {% block meta %}
     <title>Dashboard - main</title>
 {% endblock meta %}
 
 {% block content %}
-    <section class="welcome-section">
-        <h2>Dashboard</h2>
-    </section>
+    <div class="dashboard-content">
+        <!-- Welcome Section -->
+        <div class="welcome-section">
+            <span class="greeting-tag">Halo, Hannah! 👋</span>
+            <h1 class="welcome-title">Mari lihat dampak baikmu hari ini.</h1>
+        </div>
+
+        <!-- Summary Metrics Cards -->
+        <div class="summary-metrics">
+            <!-- Metric 1 -->
+            <div class="metric-card">
+            <div class="metric-icon icon-zap">
+                <img src="{% static 'img/lightning.png' %}" alt="lightning Icon" class="icon-img" />
+            </div>
+            <div class="metric-text">
+                <span class="metric-label">Pemakaian hari ini</span>
+                <div class="metric-value">4.8 kWh</div>
+            </div>
+            </div>
+
+            <!-- Metric 2 -->
+            <div class="metric-card metric-card-target">
+                <div class="metric-icon icon-target">
+                    <img src="{% static 'img/target.png' %}" alt="Target Icon" class="icon-img" />
+                </div>
+                <div class="metric-target-content">
+                    <div class="metric-target-item">
+                        <p class="metric-target-label">Target Pengurangan <br>Minggu Ini</p>
+                        <p class="metric-target-value">
+                            {{ target_data.co2_reduced_kg }}
+                            <span class="metric-target-unit">kg CO₂e</span>
+                        </p>
+                    </div>
+
+                    <div class="metric-target-item metric-target-progress">
+                        <p class="metric-target-label">Progress</p>
+                        <p class="metric-target-value">
+                            {{ target_data.actual_reduction_pct }}%
+                            <span class="metric-target-goal">dari {{ target_data.target_goal_pct }}%</span>
+                        </p>
+                        <span class="metric-target-status">
+                            {% if target_data.is_achieved %}
+                                Completed
+                            {% else %}
+                                On Progress
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Details Section (Chart Container + Recommendations) -->
+        <div class="dashboard-details">
+            <!-- Energy Chart Card (Container Kosong) -->
+            <div class="chart-card">
+            <div class="chart-header">
+                <h2 class="chart-title">Daily Energy Use</h2>
+                <span class="chart-period">This week</span>
+            </div>
+
+            <!-- Container Chart untuk JS Canvas / SVG -->
+            <div class="chart-container" id="dailyEnergyChart">
+                <!-- Area chart dikosongkan terlebih dahulu -->
+            </div>
+            </div>
+
+            <!-- Recommendations Card -->
+            <div class="recommendations-card">
+            <div class="recommendations-header">
+                <div class="idea-icon">
+                <img src="{% static 'img/lightbulb.png' %}" alt="Lightbulb Icon" class="icon-img" />
+                </div>
+                <div class="recommendations-title">
+                <span>Rekomendasi</span>
+                <span>Hari Ini</span>
+                </div>
+            </div>
+
+            <div class="recommendation-list">
+                {% for recommendation in recommendations %}
+                <div class="recommendation-item">
+                    {{ recommendation }}
+                </div>
+                {% empty %}
+
+                {% endfor %}
+                
+            </div>
+            </div>
+        </div>
+        </div>
 {% endblock %}

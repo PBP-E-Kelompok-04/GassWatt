@@ -66,6 +66,7 @@ def get_weekly_target_summary(user, target_goal_pct=10.0):
         'is_achieved': is_achieved
     }
 
+# @login_required
 def show_dashboard(request):
     recommendations = []
 
@@ -126,10 +127,26 @@ def show_dashboard(request):
                 f"{label} menyala selama {hours} jam/hari. Mengurangi durasi pemakaian 1-2 jam sehari dapat menekan emisi harianmu."
             )
 
-    # 4. Batasi maksimal 3 rekomendasi teratas agar dashboard tetap bersih
+    reusable_survey = ReusableItemSurvey.objects.filter(user=request.user)
+
+    for item in reusable_survey:
+        item_display = item.get_item_type_display()
+        uses = item.uses_per_week
+        qty = item.quantity
+
+        if uses < 3:
+            recommendations.append(
+                f"Penggunaan {item_display} hanya {uses} kali seminggu. Tingkatkan penggunaannya agar lebih maksimal mengurangi sampah sekali pakai."
+            )
+
+        elif qty >= 2 and uses < 5:
+            recommendations.append(
+                f"Kamu memiliki {qty} unit {item_display}. Gunakan sesering mungkin agar seimbang dengan footprint produksinya."
+            )
+
     context = {
         'target_data': target_weekly,
-        'recommendations': recommendations[:3]  
+        'recommendations': recommendations  
     }
     return render(request, "dashboard-templates/dashboard.html", context)
 
@@ -158,7 +175,7 @@ def _sync_daily_emission_logs(user):
         total=Sum('daily_emission_co2')
     )['total'] or 0
 
-    current_total = transport + electricity + reusable
+    current_total = transport + electricity - reusable
 
     last_log = DailyEmissionLog.objects.filter(user=user).order_by('-date').first()
 
@@ -382,6 +399,12 @@ def emission_dashboard(request):
         )['total'] or 0.0
     )
 
+    reusable_daily = float(
+        ReusableItemSurvey.objects.filter(user=user).aggregate(
+            total=Sum('daily_emission_co2')
+        )['total'] or 0.0
+    )
+
     # Akumulasi jarak 7 hari 
     total_7days_distance = daily_survey_distance * 7.0
 
@@ -415,14 +438,15 @@ def emission_dashboard(request):
     avoided_km_7days = daily_eco_distance * 7.0
 
     context = {
-        'today_emission': round(today_emission, 1),       
-        'total_7days_emission': round(total_7days_emission, 1), 
-        'co2_saved': round(co2_saved_7days, 1),            
+        'today_emission': round(today_emission, 2),       
+        'total_7days_emission': round(total_7days_emission, 2), 
+        'co2_saved': round(co2_saved_7days, 2),            
         'eco_score': eco_score,                            
         'trees_saved': trees_saved,                        
-        'avoided_km': round(avoided_km_7days, 1),    
-        'transport_emission_today': round(transport_daily, 1),
-        'electricity_emission_today': round(electricity_daily, 1),      
+        'avoided_km': round(avoided_km_7days, 2),    
+        'transport_emission_today': round(transport_daily, 2),
+        'electricity_emission_today': round(electricity_daily, 2),      
+        'reusable_emission_saved_today': round(reusable_daily, 2),
     }
     
     return render(request, 'dashboard-templates/dashboard-emission.html', context)

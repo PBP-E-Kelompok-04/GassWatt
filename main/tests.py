@@ -6,7 +6,12 @@ from django.core.cache import cache
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import TransportationSurvey, SavedLocation, ElectricitySurvey
+from .models import (
+    TransportationSurvey,
+    SavedLocation,
+    ElectricitySurvey,
+    ReusableItemSurvey,
+)
 
 from . import weather_logic
 from .forms import LocationForm, LocationRenameForm, ElectricitySurveyForm

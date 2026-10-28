@@ -556,10 +556,12 @@ def show_about(request):
 
 
 def admin_dashboard(request):
-    # Data dummy (contoh)
     context = {
-        'admin_name' : 'Sofie',
-        'npm' : '12345',
+        "admin_name": (
+                    request.user.get_full_name() or request.user.username
+                    if request.user.is_authenticated
+                    else "Administrator"
+                ),
         'total_pengguna' : 5,
         'total_emisi' : '3.482',
         'aktivitas_hari_ini' : 542,

@@ -21,5 +21,6 @@ from GassWatt.view import landing_page
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("", include("authentication.urls")),
     path("", include("main.urls")),
 ]

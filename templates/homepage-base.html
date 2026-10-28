@@ -36,9 +36,9 @@
                 <div class="header-actions">
                     <span class="language">EN</span>
                         <span class="nav-user">{{ user.username }}</span>
-                        <a class="btn btn-outline">Logout</a>
-                        <a class="btn btn-outline">Sign In</a>
-                        <a class="btn btn-solid">Sign Up</a>
+                        <a href="{% url 'logout_user' %}" class="btn btn-outline">Logout</a>
+                        <a href="{% url 'show_login' %}" class="btn btn-outline">Sign In</a>
+                        <a href="{% url 'show_register' %}"a class="btn btn-solid">Sign Up</a>
                 </div>
             </div>
         </div>

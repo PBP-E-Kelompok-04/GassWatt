@@ -1,7 +1,7 @@
 
 .emission-page {
     position: relative;
-    z-index: 1;
+    z-index: 2;
     width: 100%;
     padding: 20px 12px 30px;
     color: #174532;
@@ -25,7 +25,7 @@
     gap: 12px;
     min-width: 0;
     padding: 16px;
-    background: rgba(255, 255, 255, 0.65);
+    background: rgba(255, 255, 255, 0.75);
     border-radius: 36px;
 }
 
@@ -87,7 +87,7 @@
     justify-content: center;
     padding: 12px 8px;
     text-align: center;
-    background: rgba(255, 255, 255, 0.58);
+    background: rgba(255, 255, 255, 0.75);
     border-radius: 32px;
 }
 
@@ -175,24 +175,6 @@
     padding: 0%;
 }
 
-/* Efek kartu yang cocok dengan pencarian (Standout) */
-.card-standout {
-    transform: translateY(-8px) scale(1.02) !important;
-    box-shadow: 0 16px 28px -6px rgba(19, 134, 93, 0.25), 
-                0 6px 12px -2px rgba(0, 0, 0, 0.08) !important;
-    opacity: 1 !important;
-    filter: grayscale(0%) !important;
-    border: 2px solid #10b981 !important; /* Border hijau penegas */
-    z-index: 10;
-}
-
-/* Efek kartu lain yang tidak cocok (Dimmed) */
-.card-dimmed {
-    opacity: 0.35 !important;
-    filter: grayscale(40%) !important;
-    transform: scale(0.98) !important;
-    transition: all 0.3s ease !important;
-}
 
 @media (max-width: 900px) {
     .emission-summary {

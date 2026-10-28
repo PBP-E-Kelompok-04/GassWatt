@@ -44,6 +44,10 @@
             </button>
         </div>
 
+        <p class="transportation-help">
+            Masukkan pemakaian transportasi kamu sehari-hari beserta jarak penggunaannya. 
+        </p>
+
         <!-- Wrapper Tabel & States (Position Relative untuk Popover Popups) -->
         <div class="transport-table-wrapper" id="tableWrapper">
 
@@ -213,4 +217,66 @@
 <script src="{% static 'js/survey-ajax.js' %}"></script>
 <script src="{% static 'js/survey-electricity.js' %}"></script>
 <script src="{% static 'js/survey-reusable.js' %}"></script>
+<script>
+    const searchInput = document.getElementById("searchInput");
+
+    // Helper Function: Debounce
+    function debounce(func, delay = 300) {
+        let timeoutId;
+        return function (...args) {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                func.apply(this, args);
+            }, delay);
+        };
+    }
+
+    // Logika Highlight & Standout
+    function highlightCards(query) {
+        const cleanQuery = query.toLowerCase().trim();
+        const cards = document.querySelectorAll(".survey-page tr[data-id]");
+
+        // Jika search bar kosong, kembalikan semua kartu ke tampilan normal
+        if (cleanQuery === "") {
+            cards.forEach(card => {
+                card.classList.remove("card-standout", "card-dimmed");
+            });
+            return;
+        }
+
+        cards.forEach(card => {
+            const fullText = card.textContent.toLowerCase();
+
+            if (fullText.includes(cleanQuery)) {
+                // Kartu yang cocok diberi efek Standout
+                card.classList.add("card-standout");
+                card.classList.remove("card-dimmed");
+            } else {
+                // Kartu yang tidak cocok diredupkan
+                card.classList.add("card-dimmed");
+                card.classList.remove("card-standout");
+            }
+        });
+    }
+
+    // Event listener 'input' dengan debounce 300ms
+    if (searchInput) {
+        searchInput.addEventListener(
+            "input",
+            debounce(function (event) {
+                highlightCards(event.target.value);
+            }, 300)
+        );
+    }
+    
+    if (searchInput) {
+        searchInput.addEventListener(
+            "input",
+            debounce(function (event) {
+                highlightCards(event.target.value);
+            }, 300)
+        );
+    }
+
+</script>
 {% endblock %}

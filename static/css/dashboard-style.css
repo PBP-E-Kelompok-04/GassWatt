@@ -265,7 +265,7 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  background-color: #ffffff !important;
+  background-color: rgba(255, 255, 255, 0.75) !important;
   border: 1px solid #d8e8dd;
   border-radius: 40px;
   padding: 16px 20px;
@@ -394,7 +394,7 @@
 .chart-card {
   flex: 1.2;
   align-self: flex-start;
-  background-color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.75);
   border: 1px solid #d8e8dd;
   border-radius: 32px;
   padding: 20px;
@@ -501,7 +501,26 @@ body.dashboard-page {
     padding-top: 0;
 }
 
-@media (max-width: 900px) {
+/* Efek kartu yang cocok dengan pencarian (Standout) */
+.card-standout {
+    transform: translateY(-8px) scale(1.02) !important;
+    box-shadow: 0 16px 28px -6px rgba(19, 134, 93, 0.25), 
+                0 6px 12px -2px rgba(0, 0, 0, 0.08) !important;
+    opacity: 1 !important;
+    filter: grayscale(0%) !important;
+    border: 2px solid #10b981 !important; /* Border hijau penegas */
+    z-index: 10;
+}
+
+/* Efek kartu lain yang tidak cocok (Dimmed) */
+.card-dimmed {
+    opacity: 0.35 !important;
+    filter: grayscale(40%) !important;
+    transform: scale(0.98) !important;
+    transition: all 0.3s ease !important;
+}
+
+@media (max-width: 600px) {
     .sidebar {
         width: 80px; 
         padding: 24px 12px;
@@ -517,6 +536,14 @@ body.dashboard-page {
         justify-content: center;
         padding: 12px;
         border-radius: 50%;
+    }
+
+    .top-header{
+        flex-direction: column-reverse;
+    }
+
+    .user-profile{
+        align-self: flex-end;
     }
 
     .main-content {

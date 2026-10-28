@@ -13,6 +13,8 @@ from django.contrib import messages
 
 from django.views.decorators.http import require_GET, require_POST
 
+from authentication.views import show_login, login_user, show_register, register_user
+
 from .models import (
     TransportationSurvey,
     ElectricitySurvey,

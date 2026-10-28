@@ -29,16 +29,16 @@
                        class="nav-link {% if current == 'show_about' %}active{% endif %}">About</a>
                     <a href="{% url 'main:show_faq' %}"
                        class="nav-link {% if current == 'show_faq' %}active{% endif %}">FAQ</a>
-                    <a 
-                       class="nav-link {% if current == 'show_contact' %}active{% endif %}">Contact</a>
                 </nav>
 
                 <div class="header-actions">
-                    <span class="language">EN</span>
+                    {% if user.is_authenticated %}
                         <span class="nav-user">{{ user.username }}</span>
-                        <a class="btn btn-outline">Logout</a>
-                        <a class="btn btn-outline">Sign In</a>
-                        <a class="btn btn-solid">Sign Up</a>
+                        <a href="{% url 'logout_user' %}" class="btn btn-outline">Logout</a>
+                    {% else %}
+                        <a href="{% url 'show_login' %}" class="btn btn-outline">Sign In</a>
+                        <a href="{% url 'show_register' %}"a class="btn btn-solid">Sign Up</a>
+                    {% endif %}
                 </div>
             </div>
         </div>

@@ -379,7 +379,7 @@ a {
 .nav {
     display: flex;
     align-items: center;
-    gap: 44px;
+    gap: 120px;
     transition: gap 0.35s ease;
 }
 

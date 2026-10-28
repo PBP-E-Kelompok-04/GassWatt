@@ -1,5 +1,5 @@
 /* ==========================================================
-   CSS Tambahan Khusus Modul Admin Portal (Sofie)
+   CSS Tambahan Khusus Modul Admin Portal 
    Mendukung & Melengkapi 'dashboard-style.css'
    ========================================================== */
 
@@ -7,7 +7,7 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;900&display=swap');
 
-/* Memaksa seluruh elemen admin menggunakan font Poppins */
+
 .dashboard-container, 
 .sidebar, 
 .main-content, 
@@ -16,9 +16,32 @@
     font-family: 'Poppins', sans-serif !important;
 }
 
+/* Transisi pada kondisi default. */
+.admin-card,
+.metric-card,
+.admin-chart-card {
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.25s ease;
+    will-change: transform, box-shadow;
+    cursor: pointer;
+}
+
+
+/* Efek pop-up saat kursor diarahkan ke box (hover) */
+.admin-card:hover,
+.metric-card:hover,
+.admin-chart-card:hover {
+    transform: translateY(-6px) scale(1.01);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08),
+                0 4px 12px rgba(22, 137, 93, 0.12);
+    border-color:rgba(22, 137, 93, 0.4) ;
+
+}
+
 .admin-metrics-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 20px;
     z-index: 2;
     position: relative;
@@ -83,11 +106,12 @@
 
 /* Seksi Grafik & Chart */
 .admin-analytics-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 20px;
     z-index: 2;
     position: relative;
+    width: 100%;
 }
 
 .admin-chart-card {
@@ -151,7 +175,7 @@
 .color-dot.reusable { background-color: #d9d9d9; }
 
 /* Responsive untuk Layar Kecil */
-@media (max-width: 900px) {
+@media (max-width: 768px) {
     .admin-analytics-grid {
         grid-template-columns: 1fr;
     }
@@ -487,15 +511,7 @@
     line-height: 1.6;
 }
 
-.user-role-badge {
-    display: inline-block;
-    padding: 2px 10px;
-    border: 1px solid #16895d;
-    border-radius: 20px;
-    background: #fff;
-    color: #16895d;
-    font-size: 11px;
-}
+
 
 /* ---------- TOMBOL TAMBAH FAQ ---------- */
 
@@ -946,4 +962,68 @@
         flex: 1;
         padding: 11px 12px;
     }
+
+    /* ==========================================================
+   STYLE HEADER PROFIL ADMIN (SERAGAM DI SEMUA HALAMAN)
+   ========================================================== */
+
+.top-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 24px;
+}
+
+.welcome-section h2 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #133c2b;
+    font-family: 'Poppins', sans-serif;
+    margin: 0;
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.profile-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #16895d;
+}
+
+.profile-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+.user-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: #015230;
+    font-family: 'Poppins', sans-serif;
+    line-height: 1.2;
+    margin: 0;
+}
+
+.user-role-badge {
+    font-size: 13px;
+    color: #16895d;
+    background-color: #ffffff;
+    border: 1.5px solid #16895d;
+    padding: 2px 14px;
+    border-radius: 30px;
+    display: inline-block;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
+    line-height: 1;
+}
+
 }

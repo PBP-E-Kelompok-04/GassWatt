@@ -89,7 +89,6 @@
                 </tfoot>
             </table>
 
-            {% include "components/delete_modal.html" %}
             {% include "components/form_transportasi_modal.html" %}
 
         </div>
@@ -190,7 +189,7 @@
         </div>
     </section>
 </div>
-
+{% include "components/delete_modal.html" %}
 <div
     id="surveyConfig"
     data-list-url="{% url 'main:survey_transport_list_json' %}"

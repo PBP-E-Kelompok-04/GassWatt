@@ -25,7 +25,7 @@
 }
 
 .admin-card {
-    background: var(--glass, rgba(255, 255, 255, 0.7));
+    background: #ffffff;
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
     border: 1px solid rgba(255, 255, 255, 0.8);
@@ -91,7 +91,7 @@
 }
 
 .admin-chart-card {
-    background: var(--glass, rgba(255, 255, 255, 0.7));
+    background: #ffffff;
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
     border: 1px solid rgba(255, 255, 255, 0.8);
@@ -678,6 +678,19 @@
     white-space: pre-line;
     overflow-wrap: anywhere;
 }
+
+/* 1. Kunci posisi background blur di PALING BELAKANG */
+.bg-blur,
+.blur-1,
+.blur-2 {
+    position: absolute !important;
+    z-index: 0 !important;
+    pointer-events: none; /* Mencegah blur menghalangi klik mouse */
+}
+
+
+
+
 
 /* ---------- MODAL TAMBAH & EDIT FAQ ---------- */
 

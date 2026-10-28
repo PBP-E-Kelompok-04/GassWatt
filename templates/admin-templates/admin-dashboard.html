@@ -64,7 +64,12 @@
                 </div>
 
                 <div class="user-profile">
-                    <img src="{% static 'img/87346.png' %}" alt="Avatar" class="profile-avatar">
+                    {% static 'img/87346.png' as default_avatar %}
+                    <img src="{% static 'img/87346.png' %}" 
+                         alt="Avatar" 
+                         class="profile-avatar" 
+                         onerror="this.onerror=null; this.src='{{ default_avatar }}';">
+                         
                     <div class="profile-info">
                         <span class="user-name">{{ admin_name  }}</span>
                         <span class="user-role-badge">Administrator</span>

@@ -66,7 +66,7 @@ def get_weekly_target_summary(user, target_goal_pct=10.0):
         'is_achieved': is_achieved
     }
 
-# @login_required
+@login_required
 def show_dashboard(request):
     recommendations = []
 
@@ -143,6 +143,10 @@ def show_dashboard(request):
             recommendations.append(
                 f"Kamu memiliki {qty} unit {item_display}. Gunakan sesering mungkin agar seimbang dengan footprint produksinya."
             )
+    if not reusable_survey:
+        recommendations.append(
+            "Kamu belum menggunakan Barang Reusable sama sekali. Gunakan Barang Reusable supaya membantu mengurangi emisi yang kamu hasilkan"
+        )
 
     context = {
         'target_data': target_weekly,

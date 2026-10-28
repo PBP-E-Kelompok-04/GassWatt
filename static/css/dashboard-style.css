@@ -393,6 +393,7 @@
 /* Chart Card */
 .chart-card {
   flex: 1.2;
+  min-width: 0;
   align-self: flex-start;
   background-color: #ffffff;
   border: 1px solid #d8e8dd;
@@ -426,7 +427,7 @@
 /* Container Chart (Kosong) */
 .chart-container {
   width: 100%;
-  flex-grow: 1;
+  flex-grow: 0;
   min-height: 180px;
   position: relative;
 }
@@ -523,5 +524,35 @@ body.dashboard-page {
         margin-left: 80px;
         width: calc(100% - 80px);
         padding: 24px 20px;
+    }
+
+    .dashboard-details {
+        flex-direction: column;
+    }
+
+    .chart-card,
+    .recommendations-card {
+        width: 100%;
+        min-width: 0;
+        flex: none;
+    }
+
+    .chart-container {
+        height: 220px;
+    }
+
+    .summary-metrics {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .metric-card {
+        flex: none;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .metric-card-target {
+        width: 100%;
     }
 }

@@ -2,15 +2,12 @@ from datetime import timedelta
 import json
 
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.contrib import messages
+from django.db.models import Sum
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render, redirect
-from django.views.decorators.http import require_POST
 from django.utils import timezone
-from django.contrib.auth.models import User
-
-
-from django.contrib import messages
-
 from django.views.decorators.http import require_GET, require_POST
 
 from ..models import (

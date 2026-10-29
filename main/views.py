@@ -1,15 +1,15 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 import math, json
 
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError, transaction
-from django.db.models import Sum, Count
+from django.db.models import Sum
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render, redirect
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.contrib.auth.models import User
-from django.db.models.functions import ExtractMonth
+
 
 
 from django.contrib import messages
@@ -669,11 +669,53 @@ def admin_dashboard(request):
 
     return render(request, "admin-templates/admin-dashboard.html", context)
 
-
+@login_required
 def kelola_pengguna(request):
-    return render(request, "admin-templates/kelola-pengguna.html")
+    users = User.objects.all().order_by('-date_joined')
+    user_list = []
 
-## @login_required
+    for u in users:
+        # Hitung akumulasi emisi per user dari 3 survey
+        e_electricity = ElectricitySurvey.objects.filter(user=u).aggregate(s=Sum('daily_emission_co2'))['s'] or 0
+        e_transport = TransportationSurvey.objects.filter(user=u).aggregate(s=Sum('daily_emission_co2'))['s'] or 0
+        e_reusable = ReusableItemSurvey.objects.filter(user=u).aggregate(s=Sum('daily_emission_co2'))['s'] or 0
+        
+        total_emission = round(float(e_electricity) + float(e_transport) + float(e_reusable), 1)
+        
+        user_list.append({
+            'id': u.id,
+            'nama' : u.get_full_name() or u.username,
+            'email' : u.email or "-",
+            'role' : 'Admin' if u.is_staff or u.is_superuser else 'Pengguna',
+            'total_emisi' : total_emission,
+            'status' : 'Aktif' if u.is_active else 'Inaktif',
+            'is_self' : u == request.user
+        })
+
+    context = {
+        'admin_name' : request.user.get_full_name() or request.user.username,
+        'users' : user_list,
+        'total_count' : len(user_list),
+    }
+
+    return render(request, "admin-templates/kelola-pengguna.html", context)
+
+
+@login_required
+@require_POST
+def delete_user(request, user_id):
+    """Endpoint untuk menghapus/menonaktifkan pengguna"""
+    try:
+        user_to_delete = User.objects.get(id=user_id)
+        if user_to_delete == request.user:
+            return JsonResponse({'status': 'error', 'message': 'Tidak bisa menghapus akun sendiri!'}, status=400)
+
+        user_to_delete.delete()
+        return JsonResponse({'status': 'success', 'message': 'Pengguna berhasil dihapus.'})
+    except User.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Pengguna tidak ditemukan.'}, status=404)
+
+@login_required
 def kelola_faq(request):
     faq_list = FAQ.objects.all().order_by("order", "id")
     context = {

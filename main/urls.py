@@ -7,7 +7,7 @@ from main.views import(
     survey_reusable_list_json, add_reusable_survey, edit_reusable_survey, delete_reusable_survey,
     emission_dashboard, emission_chart_api, daily_energy_chart_api,
     show_faq, show_about,
-    admin_dashboard, kelola_pengguna, kelola_faq, add_faq, edit_faq, delete_faq,
+    admin_dashboard, kelola_pengguna, delete_user, kelola_faq, add_faq, edit_faq, delete_faq,
     search_location_api, fetch_weather_api, list_locations, 
     save_location, update_location, activate_location, delete_location,
 )
@@ -41,6 +41,7 @@ urlpatterns = [
     path("about/", show_about, name="show_about"),
     path('admin-portal/', admin_dashboard, name='admin_dashboard'),
     path('admin-portal/pengguna/', kelola_pengguna, name='kelola_pengguna'),
+    path('admin-portal/<int:user_id>/delete/', delete_user, name='delete_user'),
     path('admin-portal/faq/', kelola_faq, name='kelola_faq'),
     path('admin-portal/faq/add/', add_faq, name='add_faq'),
     path('admin-portal/<int:faq_id>/edit/', edit_faq, name='edit_faq'),

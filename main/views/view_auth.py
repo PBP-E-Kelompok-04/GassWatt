@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.csrf import csrf_protect
 
 User = get_user_model()
 
@@ -21,7 +22,7 @@ def login_user(request):
     user = authenticate(request, username=identifier, password=password)
     if user is None:
         messages.error(request, "Username atau password invalid.")
-        return redirect("show_login")
+        return redirect("main:show_login")
 
     login(request, user)
 
@@ -44,31 +45,32 @@ def register_user(request):
 
     if not username or not email or not password:
         messages.error(request, "Username, email, dan password dibutuhkan.")
-        return redirect("show_register")
+        return redirect("main:show_register")
 
     if "@" in username:
         messages.error(request, "Username tidak boleh mengandung '@'.")
-        return redirect("show_register")
+        return redirect("main:show_register")
 
     if password != confirm_password:
         messages.error(request, "Password tidak sama.")
-        return redirect("show_register")
+        return redirect("main:show_register")
 
     if User.objects.filter(username__iexact=username).exists():
         messages.error(request, "Username sudah diambil.")
-        return redirect("show_register")
+        return redirect("main:show_register")
 
     if User.objects.filter(email__iexact=email).exists():
         messages.error(request, "Email sudah terdaftar.")
-        return redirect("show_register")
+        return redirect("main:show_register")
 
     User.objects.create_user(username=username, email=email, password=password)
     messages.success(request, "Akun telah dibuat. Anda bisa login.")
-    return redirect("show_login")
+    return redirect("main:show_login")
 
 
 @require_POST
+@csrf_protect
 def logout_user(request):
     logout(request)
     messages.success(request, "Anda telah logout.")
-    return redirect("show_login")
+    return redirect("main:show_login")

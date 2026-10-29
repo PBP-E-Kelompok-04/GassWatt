@@ -15,7 +15,7 @@
                 </ul>
             {% endif %}
 
-            <form method="post" action="{% url 'register_user' %}">
+            <form method="post" action="{% url 'main:register_user' %}">
                 {% csrf_token %}
 
                 <label for="username">Username</label>
@@ -33,7 +33,7 @@
                 <button type="submit">Create account</button>
             </form>
 
-            <p>Already have an account? <a href="{% url 'show_login' %}">Log in</a></p>
+            <p>Already have an account? <a href="{% url 'main:show_login' %}">Log in</a></p>
         </div>
     </section>
 </main>

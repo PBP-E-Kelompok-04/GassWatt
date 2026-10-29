@@ -1,7 +1,7 @@
 
 .emission-page {
     position: relative;
-    z-index: 1;
+    z-index: 2;
     width: 100%;
     padding: 20px 12px 30px;
     color: #174532;
@@ -25,7 +25,7 @@
     gap: 12px;
     min-width: 0;
     padding: 16px;
-    background: rgba(255, 255, 255, 0.65);
+    background: rgba(255, 255, 255, 0.75);
     border-radius: 36px;
 }
 
@@ -87,7 +87,7 @@
     justify-content: center;
     padding: 12px 8px;
     text-align: center;
-    background: rgba(255, 255, 255, 0.58);
+    background: rgba(255, 255, 255, 0.75);
     border-radius: 32px;
 }
 
@@ -175,28 +175,10 @@
     padding: 0%;
 }
 
-/* Efek kartu yang cocok dengan pencarian (Standout) */
-.card-standout {
-    transform: translateY(-8px) scale(1.02) !important;
-    box-shadow: 0 16px 28px -6px rgba(19, 134, 93, 0.25), 
-                0 6px 12px -2px rgba(0, 0, 0, 0.08) !important;
-    opacity: 1 !important;
-    filter: grayscale(0%) !important;
-    border: 2px solid #10b981 !important; /* Border hijau penegas */
-    z-index: 10;
-}
-
-/* Efek kartu lain yang tidak cocok (Dimmed) */
-.card-dimmed {
-    opacity: 0.35 !important;
-    filter: grayscale(40%) !important;
-    transform: scale(0.98) !important;
-    transition: all 0.3s ease !important;
-}
 
 @media (max-width: 900px) {
     .emission-summary {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .summary-card {
@@ -217,22 +199,71 @@
     }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 600px) {
+    body:has(.emission-page) .main-content {
+        padding: 18px 12px;
+    }
+
     .emission-page {
-        padding: 16px 8px;
+        padding: 12px 0 20px;
+    }
+
+    .emission-summary {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .summary-card {
+        gap: 10px;
+        padding: 14px;
+    }
+
+    .summary-icon {
+        width: 42px;
+        height: 42px;
+        padding: 8px;
+    }
+
+    .summary-card h2 {
+        font-size: 18px;
+        line-height: 1.35;
+    }
+
+    .summary-card h2 small {
+        font-size: 0.75em;
+    }
+
+    .emission-content {
+        gap: 10px;
+    }
+
+    .impact-cards {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .impact-card {
+        min-height: 120px;
     }
 
     .chart-card {
-        padding: 12px 8px;
+        padding: 16px 12px;
+        border-radius: 24px;
     }
 
+    .chart-header h2 {
+        font-size: 18px;
+    }
+
+    .chart-canvas-container {
+        height: 210px;
+    }
+}
+
+@media (max-width: 480px) {
     .chart-header {
         align-items: flex-start;
         flex-direction: column;
         margin-bottom: 14px;
-    }
-
-    .chart-canvas-container {
-        height: 220px;
     }
 }

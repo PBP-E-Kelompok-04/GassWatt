@@ -9,10 +9,9 @@ FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 AIR_QUALITY_URL = "https://air-quality-api.open-meteo.com/v1/air-quality"
 
 WEATHER_FIELDS = (
-    "temperature_2m", "relative_humidity_2m", "precipitation", "rain",
-    "weather_code", "is_day", "wind_speed_10m", "cloud_cover",
+    "temperature_2m", "relative_humidity_2m", "precipitation", "rain", "weather_code", 
+    "is_day", "wind_speed_10m", "cloud_cover", "precipitation_probability", "uv_index",
 )
-HOURLY_FIELDS = ("precipitation_probability", "uv_index")
 AIR_FIELDS = ("us_aqi", "nitrogen_dioxide", "us_aqi_nitrogen_dioxide")
 
 WMO_CODES = {
@@ -77,14 +76,11 @@ AIR_QUALITY_EMPTY = {
     "air_quality_time": None,
 }
 
-
 class WeatherServiceError(Exception):
     """Kesalahan dari API eksternal atau respons yang tidak valid."""
 
-
 def image_url(path):
     return static(path) if path else ""
-
 
 def parse_wmo_code(code, is_day=1):
     description, day_path, night_path = WMO_CODES.get(
@@ -108,15 +104,12 @@ METRIC_ICON_FILES = {
     "time": (25, 22),
 }
 
-
 def metric_icon(name, level=0):
     number = METRIC_ICON_FILES[name][level]
     return image_url(f"img/WeatherIcon/WeatherIcon - 1-{number}.png")
 
-
 def icon_when_available(name, value, level=0):
     return metric_icon(name, level) if value is not None else ""
-
 
 def weather_metric_icons(weather):
     temp = weather.get("temperature")
@@ -155,7 +148,6 @@ def weather_metric_icons(weather):
         "observed": icon_when_available("observed", weather.get("observed_at")),
     }
 
-
 def api_get(url, params):
     try:
         response = requests.get(url, params=params, timeout=(3, 8))
@@ -167,7 +159,6 @@ def api_get(url, params):
     except (requests.RequestException, ValueError) as exc:
         raise WeatherServiceError("Layanan Open-Meteo sedang tidak tersedia.") from exc
 
-
 def cached(cache_key, timeout, fetcher):
     data = cache.get(cache_key)
     if data is not None:
@@ -175,7 +166,6 @@ def cached(cache_key, timeout, fetcher):
     data = fetcher()
     cache.set(cache_key, data, timeout=timeout)
     return data
-
 
 def search_locations(query):
     normalized = query.strip()
@@ -203,16 +193,6 @@ def search_locations(query):
 
     return cached(cache_key, GEOCODING_CACHE_SECONDS, fetch)
 
-
-def value_for_time(section, field, target_time, hourly=False):
-    times = section.get("time") or []
-    values = section.get(field) or []
-    for index, time in enumerate(times):
-        if (str(time).startswith(target_time) if hourly else str(time) == target_time):
-            return values[index] if index < len(values) else None
-    return None
-
-
 def aqi_category(aqi):
     if aqi is None:
         return None
@@ -227,7 +207,6 @@ def aqi_category(aqi):
     elif aqi <= 300:
         return "Sangat tidak sehat"
     return "Berbahaya"
-
 
 def get_air_quality(latitude, longitude):
     cache_key = f"air:{latitude:.4f}:{longitude:.4f}"
@@ -258,6 +237,61 @@ def get_air_quality(latitude, longitude):
 
     return cached(cache_key, AIR_CACHE_SECONDS, fetch)
 
+def parse_forecast(payload):
+    current = payload.get("current")
+    if not isinstance(current, dict) or any(
+        current.get(key) is None for key in ("time", "temperature_2m", "weather_code", "is_day")
+    ):
+        raise WeatherServiceError("Respons cuaca tidak memiliki data saat ini.")
+
+    time_str = current["time"]
+    try:
+        datetime.fromisoformat(time_str)
+    except (ValueError, TypeError) as exc:
+        raise WeatherServiceError("Waktu data cuaca tidak valid.") from exc
+
+    description, icon_url = parse_wmo_code(current["weather_code"], current["is_day"])
+    return {
+        "temperature": current.get("temperature_2m"),
+        "humidity": current.get("relative_humidity_2m"),
+        "precipitation": current.get("precipitation"),
+        "rain": current.get("rain"),
+        "pop": current.get("precipitation_probability"),
+        "wind_speed": current.get("wind_speed_10m"),
+        "cloud_cover": current.get("cloud_cover"),
+        "weather_code": current["weather_code"],
+        "weather_desc": description,
+        "weather_icon": icon_url,
+        "is_day": current["is_day"],
+        "day_period": "Siang" if current["is_day"] == 1 else "Malam",
+        "uv_index": current.get("uv_index"),
+        "observed_at": time_str,
+        "timezone": payload.get("timezone", ""),
+    }
+
+
+def get_weather(latitude, longitude):
+    cache_key = f"forecast:{latitude:.4f}:{longitude:.4f}"
+
+    def fetch():
+        payload = api_get(FORECAST_URL, {
+            "latitude": latitude,
+            "longitude": longitude,
+            "current": ",".join(WEATHER_FIELDS),
+            "forecast_days": 1,
+            "timezone": "auto",
+        })
+        weather = parse_forecast(payload)
+        try:
+            weather.update(get_air_quality(latitude, longitude))
+        except WeatherServiceError:
+            weather.update(AIR_QUALITY_EMPTY.copy())
+
+        weather["icons"] = weather_metric_icons(weather)
+        weather["recommendations"] = generate_recommendations(weather)
+        return weather
+
+    return cached(cache_key, WEATHER_CACHE_SECONDS, fetch)
 
 def rec(title, desc, icon_key):
     return {
@@ -266,13 +300,11 @@ def rec(title, desc, icon_key):
         "icon": image_url(RECOMMENDATION_IMAGES[icon_key]),
     }
 
-
 def air_is_unhealthy(weather):
     return any(
         value is not None and value > 100
         for value in (weather.get("aqi"), weather.get("no2_aqi"))
     )
-
 
 def energy_recommendations(weather):
     temp = weather.get("temperature")
@@ -335,7 +367,6 @@ def energy_recommendations(weather):
             "rec-night-light"
         ))
     return items
-
 
 def mobility_recommendations(weather):
     code = weather.get("weather_code")
@@ -409,7 +440,6 @@ def mobility_recommendations(weather):
             "rec-daylight"
         ))
     return items
-
 
 def other_recommendations(weather):
     temp = weather.get("temperature")
@@ -487,70 +517,9 @@ def other_recommendations(weather):
     ))
     return items
 
-
 def generate_recommendations(weather):
     return {
         "energi": energy_recommendations(weather),
         "mobilitas": mobility_recommendations(weather),
         "lainnya": other_recommendations(weather),
     }
-
-
-def parse_forecast(payload):
-    current = payload.get("current")
-    if not isinstance(current, dict) or any(
-        current.get(key) is None for key in ("time", "temperature_2m", "weather_code", "is_day")
-    ):
-        raise WeatherServiceError("Respons cuaca tidak memiliki data saat ini.")
-
-    time_str = current["time"]
-    try:
-        datetime.fromisoformat(time_str)
-    except (ValueError, TypeError) as exc:
-        raise WeatherServiceError("Waktu data cuaca tidak valid.") from exc
-
-    description, icon_url = parse_wmo_code(current["weather_code"], current["is_day"])
-    return {
-        "temperature": current.get("temperature_2m"),
-        "humidity": current.get("relative_humidity_2m"),
-        "precipitation": current.get("precipitation"),
-        "rain": current.get("rain"),
-        "pop": value_for_time(payload.get("hourly") or {}, "precipitation_probability", time_str[:13], hourly=True),
-        "wind_speed": current.get("wind_speed_10m"),
-        "cloud_cover": current.get("cloud_cover"),
-        "weather_code": current["weather_code"],
-        "weather_desc": description,
-        "weather_icon": icon_url,
-        "is_day": current["is_day"],
-        "day_period": "Siang" if current["is_day"] == 1 else "Malam",
-        "uv_index": value_for_time(
-            payload.get("hourly") or {}, "uv_index", time_str[:13], hourly=True
-        ),
-        "observed_at": time_str,
-        "timezone": payload.get("timezone", ""),
-    }
-
-
-def get_weather(latitude, longitude):
-    cache_key = f"forecast:{latitude:.4f}:{longitude:.4f}"
-
-    def fetch():
-        payload = api_get(FORECAST_URL, {
-            "latitude": latitude,
-            "longitude": longitude,
-            "current": ",".join(WEATHER_FIELDS),
-            "hourly": ",".join(HOURLY_FIELDS),
-            "forecast_days": 1,
-            "timezone": "auto",
-        })
-        weather = parse_forecast(payload)
-        try:
-            weather.update(get_air_quality(latitude, longitude))
-        except WeatherServiceError:
-            weather.update(AIR_QUALITY_EMPTY.copy())
-
-        weather["icons"] = weather_metric_icons(weather)
-        weather["recommendations"] = generate_recommendations(weather)
-        return weather
-
-    return cached(cache_key, WEATHER_CACHE_SECONDS, fetch)

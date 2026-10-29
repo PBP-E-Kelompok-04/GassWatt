@@ -112,6 +112,13 @@
     vertical-align: middle;
 }
 
+.transportation-help {
+    margin: 0 24px 16px;
+    color: #527062;
+    font-size: 14px;
+    line-height: 1.55;
+}
+
 /* Tombol tambah */
 
 .btn-add-transport {
@@ -235,6 +242,20 @@
 
 .btn-icon:hover {
     opacity: 0.65;
+}
+
+.transport-table .btn-icon {
+    font-size: 13px;
+    font-weight: 650;
+    padding: 5px;
+}
+
+.transport-table .btn-edit {
+    color: #13865d;
+}
+
+.transport-table .btn-delete {
+    color: #dc2626;
 }
 
 /* Helper Utility */
@@ -590,6 +611,25 @@
     display: none;
 }
 
+.reusable-filter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 24px 12px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #075c3e;
+}
+
+.reusable-filter select {
+    padding: 6px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    font: inherit;
+    font-weight: 600;
+    background: #f9fafb;
+}
+
 #reusablePanel .reusable-help {
     margin: 0 24px 12px;
     color: #527062;
@@ -653,11 +693,14 @@
     .survey-tabs {
         gap: 2px;
         margin: 0 0 20px;
+        grid-template-columns: 1fr;
     }
 
     .survey-tab {
+        justify-content: flex-start;
         font-size: 12px;
         white-space: normal;
+        text-align: left;
     }
 
     .survey-tab span {
@@ -692,6 +735,7 @@
         font-size: 13px;
     }
 
+    .transportation-help,
     #electricityPanel .electricity-help,
     #reusablePanel .reusable-help { 
         margin: 0 16px 12px; 

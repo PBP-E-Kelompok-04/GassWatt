@@ -1,13 +1,16 @@
 from datetime import datetime, timedelta
-import math
+import math, json
 
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError, transaction
-from django.db.models import Sum
+from django.db.models import Sum, Count
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render, redirect
 from django.views.decorators.http import require_POST
 from django.utils import timezone
+from django.contrib.auth.models import User
+from django.db.models.functions import ExtractMonth
+
 
 from django.contrib import messages
 
@@ -585,20 +588,87 @@ def show_about(request):
     return render(request, "main-templates/about.html", context)
 
 
-
+@login_required
+@require_GET
 def admin_dashboard(request):
+
+    today_local = timezone.localtime(timezone.now()).date()
+    current_year = today_local.year
+
+    # 1. Total pengguna yang terdaftar
+    total_users = User.objects.count()
+
+    # 2. Total Emisi Tercatat
+    emisi_listrik = ElectricitySurvey.objects.aggregate(total=Sum('daily_emission_co2'))['total'] or 0
+    emisi_transport = TransportationSurvey.objects.aggregate(total=Sum('daily_emission_co2'))['total'] or 0
+    emisi_reusable = ReusableItemSurvey.objects.aggregate(total=Sum('daily_emission_co2'))['total'] or 0
+    
+    total_emisi = round(float(emisi_listrik) + float(emisi_transport) + float(emisi_reusable), 2)
+
+    # Total aktivitas
+    today_transport = TransportationSurvey.objects.filter(created_at__date=today_local).count()
+    today_listrik = ElectricitySurvey.objects.filter(created_at__date=today_local).count()
+    today_reusable = ReusableItemSurvey.objects.filter(created_at__date=today_local).count()
+    today_lokasi = SavedLocation.objects.filter(created_at__date=today_local).count()
+
+    total_aktivitas_today = today_transport + today_listrik + today_reusable + today_lokasi
+
+    # 4. Total lokasi/Kota pengguna
+    total_lokasi = SavedLocation.objects.count()
+
+    # DATA BULANAN
+    months_labels = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+    monthly_users = []
+
+    # Akumulasi pengguna terdatar hingga akhir bulan masing-masing
+    for month in range(1, 13):
+        user_count = User.objects.filter(
+            date_joined__year__lte=current_year,
+            date_joined__month__lte=month
+        ).count()
+        monthly_users.append(user_count)
+
+    # --- 2. DATA HARIAN (7 Hari Terakhir) ---
+    days_map = {0: 'Sen', 1: 'Sel', 2: 'Rab', 3: 'Kam', 4: 'Jum', 5: 'Sab', 6: 'Min'}
+    daily_labels = []
+    daily_activities = []
+
+    for i in range(6, -1, -1):
+        target_date = today_local - timedelta(days=i)
+        daily_labels.append(f"{days_map[target_date.weekday()]} ({target_date.day})")
+
+        act_count = (
+            TransportationSurvey.objects.filter(created_at__date=target_date).count() +
+            ElectricitySurvey.objects.filter(created_at__date=target_date).count() +
+            ReusableItemSurvey.objects.filter(created_at__date=target_date).count() +
+            SavedLocation.objects.filter(created_at__date=target_date).count()
+        )
+        daily_activities.append(act_count)
+
     context = {
         "admin_name": (
                     request.user.get_full_name() or request.user.username
                     if request.user.is_authenticated
                     else "Administrator"
                 ),
-        'total_pengguna' : 5,
-        'total_emisi' : '3.482',
-        'aktivitas_hari_ini' : 542,
-        'total_kota' : 12,
+        'total_users' : total_users,
+        'total_emisi' : total_emisi,
+        'total_aktivitas_today' : total_aktivitas_today,
+        'total_lokasi' : total_lokasi,
+        # Data untuk chart
+        'emisi_listrik': emisi_listrik,
+        'emisi_transport' : emisi_transport,
+        'emisi_reusable' : emisi_reusable,
+
+        # Data JSON
+        'monthly_labels_json': json.dumps(months_labels),
+        'monthly_users_json': json.dumps(monthly_users),
+        'daily_labels_json': json.dumps(daily_labels),
+        'daily_activities_json': json.dumps(daily_activities),
     }
+
     return render(request, "admin-templates/admin-dashboard.html", context)
+
 
 def kelola_pengguna(request):
     return render(request, "admin-templates/kelola-pengguna.html")

@@ -25,6 +25,8 @@
             font-family: 'Poppins' !important;
         }
     </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="dashboard-container">
@@ -69,7 +71,7 @@
                          alt="Avatar" 
                          class="profile-avatar" 
                          onerror="this.onerror=null; this.src='{{ default_avatar }}';">
-                         
+
                     <div class="profile-info">
                         <span class="user-name">{{ admin_name  }}</span>
                         <span class="user-role-badge">Administrator</span>
@@ -83,7 +85,7 @@
                 <div class="admin-card">
                     <div class="card-info">
                         <span class="card-title">Total Pengguna</span>
-                        <span class="card-value">{{ total_pengguna|default:"5" }}</span>
+                        <span class="card-value">{{ total_users|default:"0" }}</span>
                     </div>
                     <div class="card-icon">
                         <img src="{% static 'img/users.png' %}" alt="Users">
@@ -95,7 +97,7 @@
                     <div class="card-info">
                         <span class="card-title">Total Emisi Tercatat</span>
                         <div class="value-unit">
-                            <span class="card-value">{{ total_emisi|default:"3.482" }}</span>
+                            <span class="card-value">{{ total_emisi|default:"0" }}</span>
                             <span class="card-unit">Kg CO₂e</span>
                         </div>
                     </div>
@@ -108,7 +110,7 @@
                 <div class="admin-card">
                     <div class="card-info">
                         <span class="card-title">Aktivitas Hari Ini</span>
-                        <span class="card-value">{{ aktivitas_hari_ini|default:"542" }}</span>
+                        <span class="card-value">{{ total_aktivitas_today|default:"0" }}</span>
                     </div>
                     <div class="card-icon">
                         <img src="{% static 'img/cloud_lightning.png' %}" alt="Aktivitas">
@@ -120,7 +122,7 @@
                     <div class="card-info">
                         <span class="card-title">Lokasi Pengguna</span>
                         <div class="value-unit">
-                            <span class="card-value">{{ total_kota|default:"12" }}</span>
+                            <span class="card-value">{{ total_lokasi|default:"0" }}</span>
                             <span class="card-unit">Kota</span>
                         </div>
                     </div>
@@ -133,28 +135,66 @@
             <!-- STATISTIK & KATEGORI EMISI -->
             <section class="admin-analytics-grid">
                 <!-- Grafik Tren -->
-                <div class="admin-chart-card">
-                    <h3>Statistik Tren Pengguna</h3>
-                    <p class="subtitle">Pertumbuhan pengguna aktif</p>
-                    <div class="chart-box">
-                        <img src="{% static 'img/177267.svg' %}" alt="Grafik Tren">
+                <div class="user-trend-card">
+                    <div class="trend-header">
+                        <div>
+                            <h3 class="trend-title">Statistik Tren Pengguna & Aktivitas</h3>
+                            <p class="trend-subtitle">Pertumbuhan pengguna aktif dan pencatatan emisi</p>
+                        </div>
+
+                        <!-- Filter Dropdown Mode-->
+                        <select id="trendFilterSelect" class="trend-filter-select">
+                            <option value="monthly" selected>Tahun 2026 (Bulanan)</option>
+                            <option value="daily">7 Hari Terakhir</option>
+                        </select>
+                    </div>
+                    
+                    <div class="trend-chart-container">
+                        <canvas id="userTrendChart"
+                                data-monthly-labels='{{ monthly_labels_json|safe }}'
+                                data-monthly-users='{{ monthly_users_json|safe }}'
+                                data-daily-labels='{{ daily_labels_json|safe }}'
+                                data-daily-activities='{{ daily_activities_json|safe }}'>
+                        </canvas>
                     </div>
                 </div>
 
-                <!-- Donut Chart Emisi -->
-                <div class="admin-chart-card">
-                    <h3>Kategori Emisi Terbesar</h3>
-                    <div class="chart-box">
-                        <img src="{% static 'img/178276.svg' %}" alt="Emisi Chart" style="width: 170px;">
+            <!-- Card Kategori Emisi Terbesar -->
+            <div class="chart-card">
+                <h3 class="chart-title">Kategori Emisi Terbesar</h3>
+    
+                <div class="chart-container">
+                    <canvas id="emisiCategoryChart"
+                            data-listrik="{{ emisi_listrik|floatformat:2|default:'0' }}"
+                            data-transport="{{ emisi_transport|floatformat:2|default:'0' }}"
+                            data-reusable="{{ emisi_reusable|floatformat:2|default:'0' }}"> 
+                    </canvas>
+                </div>
+
+                <div class="chart-legend">
+                    <div class="legend">
+                        <span class="color-dot electricity"></span>
+                        <span>Perangkat Listrik</span>
                     </div>
-                    <div class="chart-legend">
-                        <div class="legend"><span class="color-dot electricity"></span> Perangkat Listrik</div>
-                        <div class="legend"><span class="color-dot transport"></span> Transportasi</div>
-                        <div class="legend"><span class="color-dot reusable"></span> Barang Reusable</div>
+                    <div class="legend">
+                        <span class="color-dot transport"></span>
+                        <span>Transportasi</span>
+                    </div>
+                    <div class="legend">
+                        <span class="color-dot reusable"></span>
+                        <span>Barang Reusable</span>
                     </div>
                 </div>
+            </div>
+
+
             </section>
         </main>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{% static 'js/admin-dashboard.js' %}"></script>
+
+     
 </body>
 </html>

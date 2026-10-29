@@ -105,6 +105,72 @@
 }
 
 /* Seksi Grafik & Chart */
+.user-trend-card {
+    background-color: #ffffff;      /* Mengisi background warna putih */
+    border: 1.5px solid #a3e6cd;    /* Border hijau lembut */
+    border-radius: 24px;            /* Sudut melengkung */
+    padding: 24px 32px;
+    width: 100%;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    box-sizing: border-box;
+    margin-bottom: 24px;
+}
+
+.trend-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+
+.trend-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #0b4128;
+    margin: 0;
+}
+
+.trend-subtitle {
+    font-size: 13px;
+    color: #8c8c8c;
+    margin-top: 4px;
+}
+
+.trend-filter-select {
+    background-color: #ffffff;
+    border: 1px solid #d9d9d9;
+    border-radius: 12px;
+    padding: 6px 14px;
+    font-size: 13px;
+    color: #0b4128;
+    font-weight: 600;
+    outline: none;
+    cursor: pointer;
+}
+
+.trend-chart-container {
+    position: relative;
+    width: 100%;
+    height: 280px;
+}
+
+.trend-filter-select {
+    background-color: #ffffff;
+    border: 1px solid #d9d9d9;
+    border-radius: 12px;
+    padding: 6px 14px;
+    font-size: 13px;
+    color: #0b4128;
+    font-weight: 600;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.trend-filter-select:hover {
+    border-color: #16895d;
+}
+
 .admin-analytics-grid {
     display: flex;
     flex-direction: column;
@@ -150,12 +216,42 @@
     height: auto;
 }
 
-/* Legenda Donut Chart */
+.chart-card {
+    background-color: #ffffff;
+    border: 1.5px solid #a3e6cd;
+    border-radius: 24px;
+    padding: 24px 32px;
+    width: 100%;
+    max-width: 600px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    box-sizing: border-box; /* Mencegah overflow */
+}
+
+.chart-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #0b4128;
+    margin-bottom: 20px;
+}
+
+.chart-container {
+    position: relative;
+    width: 100%;
+    max-width: 260px;        /* Ukuran ring donut pas & proporsional */
+    margin: 0 auto;
+}
+
+/* Legenda Donut Chart Horisontal */
 .chart-legend {
     display: flex;
-    flex-direction: column;
-    gap: 8px;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap; /* Agar aman di layar HP/kecil */
+    gap: 16px;
+    margin-top: 20px;
     font-size: 13px;
+    color: #555555;
 }
 
 .legend {
@@ -165,14 +261,15 @@
 }
 
 .color-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 3px;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;         /* Bentuk kotak tumpul persis seperti contoh */
 }
 
-.color-dot.electricity { background-color: #0284c7; }
-.color-dot.transport { background-color: #ffb31e; }
-.color-dot.reusable { background-color: #d9d9d9; }
+/* Warna sesuai gambar UI contoh */
+.color-dot.electricity { background-color: #00a82d; }  /* Hijau - Perangkat Listrik */
+.color-dot.transport { background-color: #0085d3; }    /* Biru - Transportasi */
+.color-dot.reusable { background-color: #ffb319; }     /* Oranye - Barang Reusable */
 
 /* Responsive untuk Layar Kecil */
 @media (max-width: 768px) {

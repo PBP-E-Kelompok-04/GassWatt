@@ -1,0 +1,709 @@
+from datetime import timedelta
+import math
+
+from django.contrib.auth.decorators import login_required
+from django.db import IntegrityError, transaction
+from django.db.models import Sum, Count
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, render
+from django.views.decorators.http import require_POST
+from django.utils import timezone
+
+from django.views.decorators.http import require_GET, require_POST
+
+from ..models.model_survey import (
+    TransportationSurvey,
+    ElectricitySurvey,
+    ReusableItemSurvey,
+    DailyEmissionLog,
+    SavedLocation,
+)
+
+from ..forms import (
+    LocationForm,
+    LocationRenameForm,
+)
+
+from ..weather_logic import (
+    WeatherServiceError,
+    get_weather,
+    search_locations,
+)
+
+
+def get_weekly_target_summary(user, target_goal_pct=10.0):
+    today = timezone.now().date()
+    this_week_start = today - timedelta(days=6)
+    last_week_start = today - timedelta(days=13)
+    last_week_end = this_week_start
+
+    this_week_raw = DailyEmissionLog.objects.filter(
+        user=user, date__gte=this_week_start, date__lte=today
+    ).aggregate(total=Sum('total_emission_co2'))['total']
+    this_week = float(this_week_raw) if this_week_raw is not None else 0.0
+
+    last_week_logs = DailyEmissionLog.objects.filter(
+        user=user, date__gte=last_week_start, date__lt=last_week_end
+    )
+    last_week_raw = last_week_logs.aggregate(
+        total=Sum('total_emission_co2')
+    )['total']
+    has_baseline = last_week_logs.count() == 7
+    last_week = float(last_week_raw) if has_baseline and last_week_raw is not None else 0.0
+
+    co2_reduced_kg = max(0.0, last_week - this_week)
+    actual_reduction_pct = ((last_week - this_week) / last_week * 100) if last_week > 0 else 0.0
+    is_achieved = actual_reduction_pct >= target_goal_pct
+
+    return {
+        'co2_reduced_kg': round(co2_reduced_kg, 2),
+        'target_goal_pct': round(target_goal_pct, 1),
+        'actual_reduction_pct': round(actual_reduction_pct, 1),
+        'is_achieved': is_achieved,
+        'has_baseline': has_baseline,
+    }
+
+@login_required
+@require_GET
+def show_dashboard(request):
+    recommendations = []
+    today = timezone.now().date()
+
+    _sync_daily_emission_logs(request.user)
+    target_weekly = get_weekly_target_summary(request.user)
+
+    if not target_weekly["has_baseline"]:
+        recommendations.append("Belum ada data emisi minggu lalu untuk menghitung progres target.")
+    elif target_weekly["is_achieved"]:
+        recommendations.append("Target minggu ini telah tercapai! Pertahankan pola mobilitas rendah emisi ini.")
+    elif target_weekly["actual_reduction_pct"] > 0:
+        recommendations.append(f"Sedikit lagi! Kamu sudah memotong {round(target_weekly['actual_reduction_pct'], 1)}% emisi minggu ini.")
+    else:
+        recommendations.append("Emisi masih lebih tinggi dari minggu lalu. Coba gunakan transportasi umum.")
+
+    transportation_survey = TransportationSurvey.objects.filter(user=request.user)
+
+    for transport in transportation_survey:
+        mode = transport.transport_mode
+        mode_display = transport.get_transport_mode_display()
+        dist = float(transport.daily_distance_km)
+        co2 = float(transport.daily_emission_co2)
+
+        if dist <= 2.0 and mode != 'walk_bike':
+            recommendations.append(
+                f"Penggunaan {mode_display} dengan jarak {dist} km tergolong dekat. Berjalan kaki atau bersepeda bisa menghemat 100% emisi harianmu ({co2:.2f} kg CO₂e)."
+            )
+        elif dist > 10.0 and mode not in ['krl_mrt_lrt', 'busway']:
+            recommendations.append(
+                f"Perjalanan sejauh {dist} km menggunakan {mode_display} menghasilkan emisi cukup tinggi ({co2:.2f} kg CO₂e). Coba beralih ke KRL, MRT, atau Busway untuk menekan emisi."
+            )
+        elif mode in ['motor_ice', 'car_ice']:
+            vehicle_type = "Motor" if mode == 'motor_ice' else "Mobil"
+            recommendations.append(
+                f"Kamu menggunakan {vehicle_type} bensin. Beralih ke {vehicle_type} listrik (EV) dapat memotong emisi harianmu hingga 60%."
+            )
+
+    electricity_survey = ElectricitySurvey.objects.filter(user=request.user)
+
+    for electric in electricity_survey:
+        device_type = electric.device_type
+        watts = float(electric.power_watts)
+        hours = electric.daily_usage_hours
+        qty = electric.quantity
+        label = electric.device_label()
+
+        if device_type == 'ac' and hours >= 8:
+            recommendations.append(
+                f"Penggunaan AC ({qty} unit) selama {hours} jam/hari menyedot emisi cukup tinggi. Atur suhu ke 24°C-25°C untuk menghemat energi."
+            )
+        elif watts >= 500.0 and device_type != 'refrigerator':
+            recommendations.append(
+                f"{label} menggunakan daya besar ({watts}W). Cabut steker saat tidak digunakan agar menghindari daya phantom."
+            )
+        elif device_type == 'lamp' and qty >= 3:
+            recommendations.append(
+                f"Kamu mencatat {qty} unit lampu. Pastikan sudah beralih ke lampu LED hemat energi dan matikan saat ruangan kosong."
+            )
+        elif hours >= 12 and device_type != 'refrigerator':
+            recommendations.append(
+                f"{label} menyala selama {hours} jam/hari. Mengurangi durasi pemakaian 1-2 jam sehari dapat menekan emisi harianmu."
+            )
+
+    reusable_survey = ReusableItemSurvey.objects.filter(user=request.user)
+
+    for item in reusable_survey:
+        item_display = item.get_item_type_display()
+        uses = item.uses_per_week
+        qty = item.quantity
+
+        if uses < 3:
+            recommendations.append(
+                f"Penggunaan {item_display} hanya {uses} kali seminggu. Tingkatkan penggunaannya agar lebih maksimal mengurangi sampah sekali pakai."
+            )
+
+        elif qty >= 2 and uses < 5:
+            recommendations.append(
+                f"Kamu memiliki {qty} unit {item_display}. Gunakan sesering mungkin agar seimbang dengan footprint produksinya."
+            )
+    if not reusable_survey:
+        recommendations.append(
+            "Kamu belum menggunakan Barang Reusable sama sekali. Gunakan Barang Reusable supaya membantu mengurangi emisi yang kamu hasilkan"
+        )
+
+    today_kwh = float(ElectricitySurvey.objects.filter(user=request.user, created_at__date=today)
+                                               .aggregate(total=Sum('daily_consumption_kwh'))['total'] or 0)
+
+    if today_kwh == 0:
+        last_survey = ElectricitySurvey.objects.filter(
+            user=request.user,
+            created_at__date__lt=today
+        ).order_by('-created_at').first()
+
+        if last_survey:
+            last_date = timezone.localtime(last_survey.created_at).date()
+
+            today_kwh = float(
+                ElectricitySurvey.objects.filter(user=request.user, created_at__date=last_date)
+                                         .aggregate(total=Sum('daily_consumption_kwh'))['total'] or 0)
+
+    # 4. Batasi maksimal 3 rekomendasi teratas agar dashboard tetap bersih
+            
+    context = {
+        'target_data': target_weekly,
+        'recommendations': recommendations,  
+        'today_kwh': today_kwh
+    }
+    return render(request, "dashboard-templates/dashboard.html", context)
+
+@login_required
+def show_dashboard_weather(request):
+    return render(request, "dashboard-templates/dashboard-weather.html")
+
+def _sync_daily_emission_logs(user):
+    today = timezone.now().date()
+
+    transport = TransportationSurvey.objects.filter(user=user).aggregate(
+        total=Sum('daily_emission_co2')
+    )['total'] or 0
+    electricity = ElectricitySurvey.objects.filter(user=user).aggregate(
+        total=Sum('daily_emission_co2')
+    )['total'] or 0
+    reusable = ReusableItemSurvey.objects.filter(user=user).aggregate(
+        total=Sum('daily_emission_co2')
+    )['total'] or 0
+
+    current_total = transport + electricity - reusable
+
+    last_log = DailyEmissionLog.objects.filter(user=user).order_by('-date').first()
+
+    if not last_log:
+        DailyEmissionLog.objects.create(
+            user=user,
+            date=today,
+            total_emission_co2=current_total
+        )
+    else:
+        DailyEmissionLog.objects.update_or_create(
+            user=user,
+            date=today,
+            defaults={'total_emission_co2': current_total}
+        )
+
+        start_date = last_log.date + timedelta(days=1)
+
+        while start_date < today:
+            DailyEmissionLog.objects.get_or_create(
+                user=user,
+                date=start_date,
+                defaults={
+                    'total_emission_co2': last_log.total_emission_co2
+                }
+            )
+            start_date += timedelta(days=1)
+
+@login_required
+@require_GET
+def emission_dashboard(request):
+    user = request.user
+    
+    # Sinkronisasi data log harian
+    _sync_daily_emission_logs(user)
+
+    today = timezone.now().date()
+    seven_days_ago = today - timedelta(days=6)
+
+    today_log = DailyEmissionLog.objects.filter(user=user, date=today).first()
+    today_emission = float(today_log.total_emission_co2) if today_log else 0.0
+
+    # 2. Total emisi RIIL 7 HARI TERAKHIR dari DailyEmissionLog
+    total_7days_emission = float(
+        DailyEmissionLog.objects.filter(
+            user=user,
+            date__gte=seven_days_ago,
+            date__lte=today
+        ).aggregate(total=Sum('total_emission_co2'))['total'] or 0.0
+    )
+
+
+    daily_survey_distance = float(
+        TransportationSurvey.objects.filter(user=user).aggregate(
+            total=Sum('daily_distance_km')
+        )['total'] or 0.0
+    )
+
+    transport_daily = float(
+        TransportationSurvey.objects.filter(user=user).aggregate(
+            total=Sum('daily_emission_co2')
+        )['total'] or 0.0
+    )
+
+    electricity_daily = float(
+        ElectricitySurvey.objects.filter(user=user).aggregate(
+            total=Sum('daily_emission_co2')
+        )['total'] or 0.0
+    )
+
+    reusable_daily = float(
+        ReusableItemSurvey.objects.filter(user=user).aggregate(
+            total=Sum('daily_emission_co2')
+        )['total'] or 0.0
+    )
+
+    # Akumulasi jarak 7 hari 
+    total_7days_distance = daily_survey_distance * 7.0
+
+    # Baseline 7 Hari jika seluruh perjalanan menggunakan Mobil Bensin (0.190 kg CO2/km)
+    transport_baseline_7days = total_7days_distance * 0.190
+    electricity_7days = electricity_daily * 7.0
+    baseline_7days_emission = transport_baseline_7days + electricity_7days
+    estimated_7days_emission = (transport_daily + electricity_daily) * 7.0
+
+    # 1. Penghematan CO2 Seminggu (Baseline Mobil 7 Hari - Emisi Riil 7 Hari)
+    co2_saved_7days = max(0.0, transport_baseline_7days - transport_daily * 7.0)
+
+    # 2. Eco Score Seminggu (Efisiensi emisi seminggu terakhir)
+    if baseline_7days_emission > 0:
+        score = (1.0 - (estimated_7days_emission / baseline_7days_emission)) * 100
+        eco_score = max(0, min(100, round(score)))
+    else:
+        eco_score = 100
+
+    # 3. Beban Serap Pohon HARI INI (1 pohon dewasa ~ 0.06 kg CO2e / hari)
+    trees_saved = round(today_emission / 0.06) if today_emission > 0 else 0
+
+    # 4. Perjalanan Dihindari seminggu (Moda ramah lingkungan x 7 hari)
+    eco_friendly_modes = ['walk_bike', 'krl_mrt_lrt', 'busway']
+    daily_eco_distance = float(
+        TransportationSurvey.objects.filter(
+            user=user,
+            transport_mode__in=eco_friendly_modes
+        ).aggregate(total=Sum('daily_distance_km'))['total'] or 0.0
+    )
+    avoided_km_7days = daily_eco_distance * 7.0
+
+    context = {
+        'today_emission': round(today_emission, 2),       
+        'total_7days_emission': round(total_7days_emission, 2), 
+        'co2_saved': round(co2_saved_7days, 2),            
+        'eco_score': eco_score,                            
+        'trees_saved': trees_saved,                        
+        'avoided_km': round(avoided_km_7days, 2),    
+        'transport_emission_today': round(transport_daily, 2),
+        'electricity_emission_today': round(electricity_daily, 2),      
+        'reusable_emission_saved_today': round(reusable_daily, 2),
+    }
+    
+    return render(request, 'dashboard-templates/dashboard-emission.html', context)
+
+@login_required
+def emission_chart_api(request):
+    user = request.user
+    _sync_daily_emission_logs(user)
+
+    today = timezone.now().date()
+    chart_dates = []
+    chart_values = []
+    day_names = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']
+
+    for i in range(6, -1, -1):
+        target_date = today - timedelta(days=i)
+        log = DailyEmissionLog.objects.filter(user=user, date=target_date).first()
+        val = float(log.total_emission_co2) if log else 0.0
+        
+        label = f"{day_names[target_date.weekday()]} ({target_date.day})"
+        chart_dates.append(label)
+        chart_values.append(val)
+
+    return JsonResponse({
+        'status': 'success',
+        'labels': chart_dates,
+        'datasets': [
+            {
+                'label': 'Jejak Karbon (kg CO2e)',
+                'data': chart_values,
+            }
+        ]
+    })
+
+@login_required
+def daily_energy_chart_api(request):
+    user = request.user
+
+    today = timezone.now().date()
+    chart_dates = []
+    chart_values = []
+    day_names = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']
+
+    for i in range(6, -1, -1):
+        target_date = today - timedelta(days=i)
+        total = float(ElectricitySurvey.objects.filter(user=user, created_at__date=target_date)
+                                               .aggregate(total=Sum('daily_consumption_kwh'))['total'] or 0)
+
+        if total == 0 and chart_values:
+            total = chart_values[-1]
+        
+        label = f"{day_names[target_date.weekday()]} ({target_date.day})"
+        chart_dates.append(label)
+        chart_values.append(total)
+
+    return JsonResponse({
+        'status': 'success',
+        'labels': chart_dates,
+        'datasets': [
+            {
+                'label': 'Penggunaan Listrik Harian (kWh)',
+                'data': chart_values,
+            }
+        ]
+    })
+
+@login_required
+@require_GET
+def search_location_api(request):
+    query = request.GET.get("q", "").strip()
+
+    if len(query) < 2:
+        return JsonResponse({"results": []})
+
+    if len(query) > 100:
+        return JsonResponse({
+            "error": "Pencarian maksimal 100 karakter."
+        }, status=400)
+
+    try:
+        return JsonResponse({
+            "results": search_locations(query)
+        })
+    except WeatherServiceError:
+        return JsonResponse({
+            "error": "Pencarian lokasi sementara gagal."
+        }, status=502)
+
+@login_required
+@require_GET
+def fetch_weather_api(request):
+    try:
+        latitude = float(request.GET["lat"])
+        longitude = float(request.GET["lon"])
+    except (KeyError, ValueError, TypeError):
+        return JsonResponse({
+            "error": "Latitude dan longitude wajib berupa angka."
+        }, status=400)
+
+    if not (
+        math.isfinite(latitude)
+        and math.isfinite(longitude)
+        and -90 <= latitude <= 90
+        and -180 <= longitude <= 180
+    ):
+        return JsonResponse({
+            "error": "Koordinat berada di luar rentang yang valid."
+        }, status=400)
+
+    try:
+        return JsonResponse(
+            get_weather(latitude, longitude)
+        )
+    except WeatherServiceError:
+        return JsonResponse({
+            "error": "Gagal mengambil cuaca dari Open-Meteo. Coba lagi."
+        }, status=502)
+
+def serialize_locations(location):
+    return {
+        "id": location.id,
+        "name": location.name,
+        "latitude": location.latitude,
+        "longitude": location.longitude,
+        "is_active": location.is_active,
+    }
+
+
+@login_required
+@require_GET
+def list_locations(request):
+    locations = SavedLocation.objects.filter(
+        user=request.user
+    )
+
+    return JsonResponse({
+        "results": [
+            serialize_locations(location)
+            for location in locations
+        ]
+    })
+
+@login_required
+@require_POST
+def save_location(request):
+    form = LocationForm(request.POST)
+
+    if not form.is_valid():
+        return JsonResponse({
+            "errors": form.errors
+        }, status=400)
+
+    values = form.cleaned_data
+
+    try:
+        with transaction.atomic():
+            SavedLocation.objects.filter(
+                user=request.user,
+                is_active=True
+            ).update(is_active=False)
+
+            location = SavedLocation.objects.filter(
+                user=request.user,
+                latitude=values["latitude"],
+                longitude=values["longitude"],
+            ).first()
+
+            created = location is None
+
+            if created:
+                location = form.save(commit=False)
+                location.user = request.user
+            else:
+                location.name = values["name"]
+
+            location.is_active = True
+            location.save()
+
+    except IntegrityError:
+        return JsonResponse({
+            "error": "Lokasi sedang diubah, coba kembali."
+        }, status=409)
+
+    return JsonResponse({
+        "status": "success",
+        "created": created,
+        "location": serialize_locations(location)
+    }, status=201 if created else 200)
+
+@login_required
+@require_POST
+def update_location(request, location_id):
+    location = get_object_or_404(
+        SavedLocation,
+        pk=location_id,
+        user=request.user
+    )
+
+    form = LocationRenameForm(
+        request.POST,
+        instance=location
+    )
+
+    if not form.is_valid():
+        return JsonResponse({
+            "errors": form.errors
+        }, status=400)
+
+    location = form.save()
+
+    return JsonResponse({
+        "status": "success",
+        "location": serialize_locations(location)
+    })
+
+@login_required
+@require_POST
+def activate_location(request, location_id):
+    try:
+        with transaction.atomic():
+            location = get_object_or_404(
+                SavedLocation,
+                pk=location_id,
+                user=request.user
+            )
+
+            SavedLocation.objects.filter(
+                user=request.user,
+                is_active=True
+            ).exclude(
+                pk=location.pk
+            ).update(is_active=False)
+
+            location.is_active = True
+            location.save(update_fields=["is_active"])
+
+    except IntegrityError:
+        return JsonResponse({
+            "error": "Terjadi konflik saat memilih lokasi."
+        }, status=409)
+
+    return JsonResponse({
+        "status": "success",
+        "location": serialize_locations(location)
+    })
+
+@login_required
+@require_POST
+def delete_location(request, location_id):
+    location = get_object_or_404(
+        SavedLocation,
+        pk=location_id,
+        user=request.user
+    )
+
+    was_active = location.is_active
+    location.delete()
+
+    return JsonResponse({
+        "status": "success",
+        "was_active": was_active
+    })
+@login_required
+@require_GET
+def list_locations(request):
+    locations = SavedLocation.objects.filter(
+        user=request.user
+    )
+
+    return JsonResponse({
+        "results": [
+            serialize_locations(location)
+            for location in locations
+        ]
+    })
+
+@login_required
+@require_POST
+def save_location(request):
+    form = LocationForm(request.POST)
+
+    if not form.is_valid():
+        return JsonResponse({
+            "errors": form.errors
+        }, status=400)
+
+    values = form.cleaned_data
+
+    try:
+        with transaction.atomic():
+            SavedLocation.objects.filter(
+                user=request.user,
+                is_active=True
+            ).update(is_active=False)
+
+            location = SavedLocation.objects.filter(
+                user=request.user,
+                latitude=values["latitude"],
+                longitude=values["longitude"],
+            ).first()
+
+            created = location is None
+
+            if created:
+                location = form.save(commit=False)
+                location.user = request.user
+            else:
+                location.name = values["name"]
+
+            location.is_active = True
+            location.save()
+
+    except IntegrityError:
+        return JsonResponse({
+            "error": "Lokasi sedang diubah, coba kembali."
+        }, status=409)
+
+    return JsonResponse({
+        "status": "success",
+        "created": created,
+        "location": serialize_locations(location)
+    }, status=201 if created else 200)
+
+@login_required
+@require_POST
+def update_location(request, location_id):
+    location = get_object_or_404(
+        SavedLocation,
+        pk=location_id,
+        user=request.user
+    )
+
+    form = LocationRenameForm(
+        request.POST,
+        instance=location
+    )
+
+    if not form.is_valid():
+        return JsonResponse({
+            "errors": form.errors
+        }, status=400)
+
+    location = form.save()
+
+    return JsonResponse({
+        "status": "success",
+        "location": serialize_locations(location)
+    })
+
+@login_required
+@require_POST
+def activate_location(request, location_id):
+    try:
+        with transaction.atomic():
+            location = get_object_or_404(
+                SavedLocation,
+                pk=location_id,
+                user=request.user
+            )
+
+            SavedLocation.objects.filter(
+                user=request.user,
+                is_active=True
+            ).exclude(
+                pk=location.pk
+            ).update(is_active=False)
+
+            location.is_active = True
+            location.save(update_fields=["is_active"])
+
+    except IntegrityError:
+        return JsonResponse({
+            "error": "Terjadi konflik saat memilih lokasi."
+        }, status=409)
+
+    return JsonResponse({
+        "status": "success",
+        "location": serialize_locations(location)
+    })
+
+@login_required
+@require_POST
+def delete_location(request, location_id):
+    location = get_object_or_404(
+        SavedLocation,
+        pk=location_id,
+        user=request.user
+    )
+
+    was_active = location.is_active
+    location.delete()
+
+    return JsonResponse({
+        "status": "success",
+        "was_active": was_active
+    })

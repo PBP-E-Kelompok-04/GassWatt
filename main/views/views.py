@@ -39,6 +39,8 @@ from ..weather_logic import (
     search_locations,
 )
 
+### DASHBOARD ###
+
 def get_weekly_target_summary(user, target_goal_pct=10.0):
     today = timezone.now().date()
     this_week_start = today - timedelta(days=6)
@@ -184,15 +186,6 @@ def show_dashboard(request):
     return render(request, "dashboard-templates/dashboard.html", context)
 
 @login_required
-@require_GET
-def show_dashboard_survey(request):
-    return render(
-        request,
-        "dashboard-templates/dashboard-survey.html",
-        {"form": TransportationSurveyForm(), "electricity_form": ElectricitySurveyForm(), "reusable_form": ReusableItemSurveyForm()},
-    )
-
-@login_required
 def show_dashboard_weather(request):
     return render(request, "dashboard-templates/dashboard-weather.html")
 
@@ -237,161 +230,6 @@ def _sync_daily_emission_logs(user):
                 }
             )
             start_date += timedelta(days=1)
-
-@login_required
-@require_GET
-def survey_transport_list_json(request):
-    surveys = TransportationSurvey.objects.filter(
-        user=request.user
-    ).order_by("-created_at")
-
-    data = [
-        {
-            "id": str(survey.id),
-            "mode": survey.get_transport_mode_display(),
-            "mode_val": survey.transport_mode,
-            "distance": float(survey.daily_distance_km),
-            "notes": survey.notes or "",
-            "daily_emission_co2": float(survey.daily_emission_co2),
-        }
-        for survey in surveys
-    ]
-
-    return JsonResponse({"status": "success", "data": data})
-
-@login_required
-def add_transport_survey(request):
-    if request.method == "POST":
-        form = TransportationSurveyForm(request.POST)
-
-        if form.is_valid():
-            survey = form.save(commit=False)
-            survey.user = request.user
-            survey.save()
-
-            _sync_daily_emission_logs(request.user)
-
-            return JsonResponse({
-                'status': 'success',
-                'message': 'Data berhasil ditambahkan.'
-            }, status=201)
-        else:
-            return JsonResponse({
-                'status': 'error',
-                'errors': form.errors
-            }, status=400)
-
-    return JsonResponse({
-        "status": "error",
-        "message": "Method tidak diizinkan."
-    }, status=405)
-
-@login_required
-def edit_transport_survey(request, survey_id):
-    survey = get_object_or_404(
-        TransportationSurvey,
-        id=survey_id,
-        user=request.user
-    )
-
-    if request.method == "POST":
-        form = TransportationSurveyForm(request.POST, instance=survey)
-
-        if form.is_valid():
-            form.save()
-            _sync_daily_emission_logs(request.user)
-
-            return JsonResponse({
-                'status': 'success',
-                'message': 'Data berhasil diperbarui.'
-            }, status=200)
-        else:
-            return JsonResponse({
-                'status': 'error',
-                'errors': form.errors
-            }, status=400)
-
-    return JsonResponse({
-        "status": "error",
-        "message": "Method tidak diizinkan."
-    }, status=405)
-
-@login_required
-def delete_transport_survey(request, survey_id):
-    survey = get_object_or_404(
-        TransportationSurvey,
-        id=survey_id,
-        user=request.user
-    )
-
-    if request.method == "POST":
-        survey.delete()
-        _sync_daily_emission_logs(request.user)
-
-        return JsonResponse({
-            'status': 'success',
-            'message': 'Data berhasil dihapus.'
-        }, status=200)
-
-    return JsonResponse({
-        "status": "error",
-        "message": "Method tidak diizinkan."
-    }, status=405)
-
-@login_required
-@require_GET
-def survey_electricity_list_json(request):
-    surveys = ElectricitySurvey.objects.filter(user=request.user).order_by('-created_at')
-    return JsonResponse({
-        'status': 'success',
-        'data': [
-            {
-                'id': str(item.id),
-                'device_type': item.device_type,
-                'device_label': item.device_label(),
-                'device_name': item.device_name or '',
-                'quantity': item.quantity,
-                'power_watts': str(item.power_watts),
-                'daily_usage_hours': str(item.daily_usage_hours),
-                'daily_consumption_kwh': str(item.daily_consumption_kwh),
-                'daily_emission_co2': str(item.daily_emission_co2),
-                'notes': item.notes or '',
-            } for item in surveys
-        ],
-    })
-
-@login_required
-@require_POST
-def add_electricity_survey(request):
-    form = ElectricitySurveyForm(request.POST)
-    if not form.is_valid():
-        return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
-
-    item = form.save(commit=False)
-    item.user = request.user
-    item.save()
-    _sync_daily_emission_logs(request.user)
-    return JsonResponse({'status': 'success', 'message': 'Perangkat berhasil ditambahkan.'}, status=201)
-
-@login_required
-@require_POST
-def edit_electricity_survey(request, survey_id):
-    item = get_object_or_404(ElectricitySurvey, pk=survey_id, user=request.user)
-    form = ElectricitySurveyForm(request.POST, instance=item)
-    if not form.is_valid():
-        return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
-
-    form.save()
-    _sync_daily_emission_logs(request.user)
-    return JsonResponse({'status': 'success', 'message': 'Perangkat berhasil diperbarui.'})
-
-@login_required
-@require_POST
-def delete_electricity_survey(request, survey_id):
-    item = get_object_or_404(ElectricitySurvey, pk=survey_id, user=request.user)
-    item.delete()
-    _sync_daily_emission_logs(request.user)
-    return JsonResponse({'status': 'success', 'message': 'Perangkat berhasil dihapus.'})
 
 @login_required
 @require_GET
@@ -549,6 +387,571 @@ def daily_energy_chart_api(request):
         ]
     })
 
+@login_required
+@require_GET
+def search_location_api(request):
+    query = request.GET.get("q", "").strip()
+
+    if len(query) < 2:
+        return JsonResponse({"results": []})
+
+    if len(query) > 100:
+        return JsonResponse({
+            "error": "Pencarian maksimal 100 karakter."
+        }, status=400)
+
+    try:
+        return JsonResponse({
+            "results": search_locations(query)
+        })
+    except WeatherServiceError:
+        return JsonResponse({
+            "error": "Pencarian lokasi sementara gagal."
+        }, status=502)
+
+@login_required
+@require_GET
+def fetch_weather_api(request):
+    try:
+        latitude = float(request.GET["lat"])
+        longitude = float(request.GET["lon"])
+    except (KeyError, ValueError, TypeError):
+        return JsonResponse({
+            "error": "Latitude dan longitude wajib berupa angka."
+        }, status=400)
+
+    if not (
+        math.isfinite(latitude)
+        and math.isfinite(longitude)
+        and -90 <= latitude <= 90
+        and -180 <= longitude <= 180
+    ):
+        return JsonResponse({
+            "error": "Koordinat berada di luar rentang yang valid."
+        }, status=400)
+
+    try:
+        return JsonResponse(
+            get_weather(latitude, longitude)
+        )
+    except WeatherServiceError:
+        return JsonResponse({
+            "error": "Gagal mengambil cuaca dari Open-Meteo. Coba lagi."
+        }, status=502)
+
+def serialize_locations(location):
+    return {
+        "id": location.id,
+        "name": location.name,
+        "latitude": location.latitude,
+        "longitude": location.longitude,
+        "is_active": location.is_active,
+    }
+
+
+@login_required
+@require_GET
+def list_locations(request):
+    locations = SavedLocation.objects.filter(
+        user=request.user
+    )
+
+    return JsonResponse({
+        "results": [
+            serialize_locations(location)
+            for location in locations
+        ]
+    })
+
+@login_required
+@require_POST
+def save_location(request):
+    form = LocationForm(request.POST)
+
+    if not form.is_valid():
+        return JsonResponse({
+            "errors": form.errors
+        }, status=400)
+
+    values = form.cleaned_data
+
+    try:
+        with transaction.atomic():
+            SavedLocation.objects.filter(
+                user=request.user,
+                is_active=True
+            ).update(is_active=False)
+
+            location = SavedLocation.objects.filter(
+                user=request.user,
+                latitude=values["latitude"],
+                longitude=values["longitude"],
+            ).first()
+
+            created = location is None
+
+            if created:
+                location = form.save(commit=False)
+                location.user = request.user
+            else:
+                location.name = values["name"]
+
+            location.is_active = True
+            location.save()
+
+    except IntegrityError:
+        return JsonResponse({
+            "error": "Lokasi sedang diubah, coba kembali."
+        }, status=409)
+
+    return JsonResponse({
+        "status": "success",
+        "created": created,
+        "location": serialize_locations(location)
+    }, status=201 if created else 200)
+
+@login_required
+@require_POST
+def update_location(request, location_id):
+    location = get_object_or_404(
+        SavedLocation,
+        pk=location_id,
+        user=request.user
+    )
+
+    form = LocationRenameForm(
+        request.POST,
+        instance=location
+    )
+
+    if not form.is_valid():
+        return JsonResponse({
+            "errors": form.errors
+        }, status=400)
+
+    location = form.save()
+
+    return JsonResponse({
+        "status": "success",
+        "location": serialize_locations(location)
+    })
+
+@login_required
+@require_POST
+def activate_location(request, location_id):
+    try:
+        with transaction.atomic():
+            location = get_object_or_404(
+                SavedLocation,
+                pk=location_id,
+                user=request.user
+            )
+
+            SavedLocation.objects.filter(
+                user=request.user,
+                is_active=True
+            ).exclude(
+                pk=location.pk
+            ).update(is_active=False)
+
+            location.is_active = True
+            location.save(update_fields=["is_active"])
+
+    except IntegrityError:
+        return JsonResponse({
+            "error": "Terjadi konflik saat memilih lokasi."
+        }, status=409)
+
+    return JsonResponse({
+        "status": "success",
+        "location": serialize_locations(location)
+    })
+
+@login_required
+@require_POST
+def delete_location(request, location_id):
+    location = get_object_or_404(
+        SavedLocation,
+        pk=location_id,
+        user=request.user
+    )
+
+    was_active = location.is_active
+    location.delete()
+
+    return JsonResponse({
+        "status": "success",
+        "was_active": was_active
+    })
+@login_required
+@require_GET
+def list_locations(request):
+    locations = SavedLocation.objects.filter(
+        user=request.user
+    )
+
+    return JsonResponse({
+        "results": [
+            serialize_locations(location)
+            for location in locations
+        ]
+    })
+
+@login_required
+@require_POST
+def save_location(request):
+    form = LocationForm(request.POST)
+
+    if not form.is_valid():
+        return JsonResponse({
+            "errors": form.errors
+        }, status=400)
+
+    values = form.cleaned_data
+
+    try:
+        with transaction.atomic():
+            SavedLocation.objects.filter(
+                user=request.user,
+                is_active=True
+            ).update(is_active=False)
+
+            location = SavedLocation.objects.filter(
+                user=request.user,
+                latitude=values["latitude"],
+                longitude=values["longitude"],
+            ).first()
+
+            created = location is None
+
+            if created:
+                location = form.save(commit=False)
+                location.user = request.user
+            else:
+                location.name = values["name"]
+
+            location.is_active = True
+            location.save()
+
+    except IntegrityError:
+        return JsonResponse({
+            "error": "Lokasi sedang diubah, coba kembali."
+        }, status=409)
+
+    return JsonResponse({
+        "status": "success",
+        "created": created,
+        "location": serialize_locations(location)
+    }, status=201 if created else 200)
+
+@login_required
+@require_POST
+def update_location(request, location_id):
+    location = get_object_or_404(
+        SavedLocation,
+        pk=location_id,
+        user=request.user
+    )
+
+    form = LocationRenameForm(
+        request.POST,
+        instance=location
+    )
+
+    if not form.is_valid():
+        return JsonResponse({
+            "errors": form.errors
+        }, status=400)
+
+    location = form.save()
+
+    return JsonResponse({
+        "status": "success",
+        "location": serialize_locations(location)
+    })
+
+@login_required
+@require_POST
+def activate_location(request, location_id):
+    try:
+        with transaction.atomic():
+            location = get_object_or_404(
+                SavedLocation,
+                pk=location_id,
+                user=request.user
+            )
+
+            SavedLocation.objects.filter(
+                user=request.user,
+                is_active=True
+            ).exclude(
+                pk=location.pk
+            ).update(is_active=False)
+
+            location.is_active = True
+            location.save(update_fields=["is_active"])
+
+    except IntegrityError:
+        return JsonResponse({
+            "error": "Terjadi konflik saat memilih lokasi."
+        }, status=409)
+
+    return JsonResponse({
+        "status": "success",
+        "location": serialize_locations(location)
+    })
+
+@login_required
+@require_POST
+def delete_location(request, location_id):
+    location = get_object_or_404(
+        SavedLocation,
+        pk=location_id,
+        user=request.user
+    )
+
+    was_active = location.is_active
+    location.delete()
+
+    return JsonResponse({
+        "status": "success",
+        "was_active": was_active
+    })
+
+### SURVEY ###
+@login_required
+@require_GET
+def show_dashboard_survey(request):
+    return render(
+        request,
+        "dashboard-templates/dashboard-survey.html",
+        {"form": TransportationSurveyForm(), "electricity_form": ElectricitySurveyForm(), "reusable_form": ReusableItemSurveyForm()},
+    )
+
+@login_required
+@require_GET
+def survey_transport_list_json(request):
+    surveys = TransportationSurvey.objects.filter(
+        user=request.user
+    ).order_by("-created_at")
+
+    data = [
+        {
+            "id": str(survey.id),
+            "mode": survey.get_transport_mode_display(),
+            "mode_val": survey.transport_mode,
+            "distance": float(survey.daily_distance_km),
+            "notes": survey.notes or "",
+            "daily_emission_co2": float(survey.daily_emission_co2),
+        }
+        for survey in surveys
+    ]
+
+    return JsonResponse({"status": "success", "data": data})
+
+@login_required
+def add_transport_survey(request):
+    if request.method == "POST":
+        form = TransportationSurveyForm(request.POST)
+
+        if form.is_valid():
+            survey = form.save(commit=False)
+            survey.user = request.user
+            survey.save()
+
+            _sync_daily_emission_logs(request.user)
+
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Data berhasil ditambahkan.'
+            }, status=201)
+        else:
+            return JsonResponse({
+                'status': 'error',
+                'errors': form.errors
+            }, status=400)
+
+    return JsonResponse({
+        "status": "error",
+        "message": "Method tidak diizinkan."
+    }, status=405)
+
+@login_required
+def edit_transport_survey(request, survey_id):
+    survey = get_object_or_404(
+        TransportationSurvey,
+        id=survey_id,
+        user=request.user
+    )
+
+    if request.method == "POST":
+        form = TransportationSurveyForm(request.POST, instance=survey)
+
+        if form.is_valid():
+            form.save()
+            _sync_daily_emission_logs(request.user)
+
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Data berhasil diperbarui.'
+            }, status=200)
+        else:
+            return JsonResponse({
+                'status': 'error',
+                'errors': form.errors
+            }, status=400)
+
+    return JsonResponse({
+        "status": "error",
+        "message": "Method tidak diizinkan."
+    }, status=405)
+
+@login_required
+def delete_transport_survey(request, survey_id):
+    survey = get_object_or_404(
+        TransportationSurvey,
+        id=survey_id,
+        user=request.user
+    )
+
+    if request.method == "POST":
+        survey.delete()
+        _sync_daily_emission_logs(request.user)
+
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Data berhasil dihapus.'
+        }, status=200)
+
+    return JsonResponse({
+        "status": "error",
+        "message": "Method tidak diizinkan."
+    }, status=405)
+
+@login_required
+@require_GET
+def survey_electricity_list_json(request):
+    surveys = ElectricitySurvey.objects.filter(user=request.user).order_by('-created_at')
+    return JsonResponse({
+        'status': 'success',
+        'data': [
+            {
+                'id': str(item.id),
+                'device_type': item.device_type,
+                'device_label': item.device_label(),
+                'device_name': item.device_name or '',
+                'quantity': item.quantity,
+                'power_watts': str(item.power_watts),
+                'daily_usage_hours': str(item.daily_usage_hours),
+                'daily_consumption_kwh': str(item.daily_consumption_kwh),
+                'daily_emission_co2': str(item.daily_emission_co2),
+                'notes': item.notes or '',
+            } for item in surveys
+        ],
+    })
+
+@login_required
+@require_POST
+def add_electricity_survey(request):
+    form = ElectricitySurveyForm(request.POST)
+    if not form.is_valid():
+        return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
+
+    item = form.save(commit=False)
+    item.user = request.user
+    item.save()
+    _sync_daily_emission_logs(request.user)
+    return JsonResponse({'status': 'success', 'message': 'Perangkat berhasil ditambahkan.'}, status=201)
+
+@login_required
+@require_POST
+def edit_electricity_survey(request, survey_id):
+    item = get_object_or_404(ElectricitySurvey, pk=survey_id, user=request.user)
+    form = ElectricitySurveyForm(request.POST, instance=item)
+    if not form.is_valid():
+        return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
+
+    form.save()
+    _sync_daily_emission_logs(request.user)
+    return JsonResponse({'status': 'success', 'message': 'Perangkat berhasil diperbarui.'})
+
+@login_required
+@require_POST
+def delete_electricity_survey(request, survey_id):
+    item = get_object_or_404(ElectricitySurvey, pk=survey_id, user=request.user)
+    item.delete()
+    _sync_daily_emission_logs(request.user)
+    return JsonResponse({'status': 'success', 'message': 'Perangkat berhasil dihapus.'})
+
+@login_required
+def survey_reusable_list_json(request):
+    item_type = request.GET.get("item_type", "").strip()
+    surveys = ReusableItemSurvey.objects.filter(user=request.user)
+    if item_type in dict(ReusableItemSurvey.ITEM_CHOICES):
+        surveys = surveys.filter(item_type=item_type)
+    surveys = surveys.order_by("-created_at")
+    data = [
+        {
+            "id": str(item.id),
+            "item": item.get_item_type_display(),
+            "item_val": item.item_type,
+            "quantity": item.quantity,
+            "uses_per_week": item.uses_per_week,
+            "notes": item.notes or "",
+            "daily_emission_co2": float(item.daily_emission_co2),
+        }
+        for item in surveys
+    ]
+    return JsonResponse({"status": "success", "data": data})  
+ 
+@login_required
+def add_reusable_survey(request):
+    if request.method == "POST":
+        form = ReusableItemSurveyForm(request.POST)
+        if form.is_valid():
+            item = form.save(commit=False)
+            item.user = request.user
+            item.save()
+            _sync_daily_emission_logs(request.user)
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Data berhasil ditambahkan.'
+            }, status=201)
+        else:
+            return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
+ 
+    return JsonResponse({"status": "error", "message": "Method tidak diizinkan."}, status=405)
+
+@login_required
+def edit_reusable_survey(request, survey_id):
+    item = get_object_or_404(ReusableItemSurvey, id=survey_id, user=request.user)
+ 
+    if request.method == "POST":
+        form = ReusableItemSurveyForm(request.POST, instance=item)
+        if form.is_valid():
+            form.save()
+            _sync_daily_emission_logs(request.user)
+            return JsonResponse({'status': 'success', 'message': 'Data berhasil diperbarui.'}, status=200)
+        else:
+            return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
+ 
+    return JsonResponse({"status": "error", "message": "Method tidak diizinkan."}, status=405)
+ 
+ 
+@login_required
+def delete_reusable_survey(request, survey_id):
+    item = get_object_or_404(ReusableItemSurvey, id=survey_id, user=request.user)
+ 
+    if request.method == "POST":
+        item.delete()
+        _sync_daily_emission_logs(request.user)
+        return JsonResponse({'status': 'success', 'message': 'Data berhasil dihapus.'}, status=200)
+ 
+    return JsonResponse({"status": "error", "message": "Method tidak diizinkan."}, status=405)
+
+
+### ADMIN-PORTAL ###
+
 
 @login_required
 @require_GET
@@ -691,7 +1094,7 @@ def kelola_faq(request):
 
     return render(request, "admin-templates/kelola-faq.html", context)
 
-## @login_required
+@login_required
 @require_POST
 def add_faq(request):
     question = request.POST.get("question", "").strip()
@@ -712,7 +1115,7 @@ def add_faq(request):
     messages.success(request, "FAQ berhasil ditambahkan.")
     return redirect('main:kelola_faq')
 
-## @login_required
+@login_required
 @require_POST
 def edit_faq(request, faq_id):
     faq = get_object_or_404(FAQ, id=faq_id)
@@ -731,7 +1134,7 @@ def edit_faq(request, faq_id):
     messages.success(request, "FAQ berhasil diperbarui")
     return redirect("main:kelola_faq")
 
-## @login_required
+@login_required
 @require_POST
 def delete_faq(request, faq_id):
     faq = get_object_or_404(FAQ, id=faq_id)
@@ -739,265 +1142,3 @@ def delete_faq(request, faq_id):
 
     messages.success(request, "FAQ berhasil dihapus.")
     return redirect('main:kelola_faq')
-
-@login_required
-@require_GET
-def search_location_api(request):
-    query = request.GET.get("q", "").strip()
-
-    if len(query) < 2:
-        return JsonResponse({"results": []})
-
-    if len(query) > 100:
-        return JsonResponse({
-            "error": "Pencarian maksimal 100 karakter."
-        }, status=400)
-
-    try:
-        return JsonResponse({
-            "results": search_locations(query)
-        })
-    except WeatherServiceError:
-        return JsonResponse({
-            "error": "Pencarian lokasi sementara gagal."
-        }, status=502)
-
-@login_required
-@require_GET
-def fetch_weather_api(request):
-    try:
-        latitude = float(request.GET["lat"])
-        longitude = float(request.GET["lon"])
-    except (KeyError, ValueError, TypeError):
-        return JsonResponse({
-            "error": "Latitude dan longitude wajib berupa angka."
-        }, status=400)
-
-    if not (
-        math.isfinite(latitude)
-        and math.isfinite(longitude)
-        and -90 <= latitude <= 90
-        and -180 <= longitude <= 180
-    ):
-        return JsonResponse({
-            "error": "Koordinat berada di luar rentang yang valid."
-        }, status=400)
-
-    try:
-        return JsonResponse(
-            get_weather(latitude, longitude)
-        )
-    except WeatherServiceError:
-        return JsonResponse({
-            "error": "Gagal mengambil cuaca dari Open-Meteo. Coba lagi."
-        }, status=502)
-
-def serialize_locations(location):
-    return {
-        "id": location.id,
-        "name": location.name,
-        "latitude": location.latitude,
-        "longitude": location.longitude,
-        "is_active": location.is_active,
-    }
-
-@login_required
-@require_GET
-def list_locations(request):
-    locations = SavedLocation.objects.filter(
-        user=request.user
-    )
-
-    return JsonResponse({
-        "results": [
-            serialize_locations(location)
-            for location in locations
-        ]
-    })
-
-@login_required
-@require_POST
-def save_location(request):
-    form = LocationForm(request.POST)
-
-    if not form.is_valid():
-        return JsonResponse({
-            "errors": form.errors
-        }, status=400)
-
-    values = form.cleaned_data
-
-    try:
-        with transaction.atomic():
-            SavedLocation.objects.filter(
-                user=request.user,
-                is_active=True
-            ).update(is_active=False)
-
-            location = SavedLocation.objects.filter(
-                user=request.user,
-                latitude=values["latitude"],
-                longitude=values["longitude"],
-            ).first()
-
-            created = location is None
-
-            if created:
-                location = form.save(commit=False)
-                location.user = request.user
-            else:
-                location.name = values["name"]
-
-            location.is_active = True
-            location.save()
-
-    except IntegrityError:
-        return JsonResponse({
-            "error": "Lokasi sedang diubah, coba kembali."
-        }, status=409)
-
-    return JsonResponse({
-        "status": "success",
-        "created": created,
-        "location": serialize_locations(location)
-    }, status=201 if created else 200)
-
-@login_required
-@require_POST
-def update_location(request, location_id):
-    location = get_object_or_404(
-        SavedLocation,
-        pk=location_id,
-        user=request.user
-    )
-
-    form = LocationRenameForm(
-        request.POST,
-        instance=location
-    )
-
-    if not form.is_valid():
-        return JsonResponse({
-            "errors": form.errors
-        }, status=400)
-
-    location = form.save()
-
-    return JsonResponse({
-        "status": "success",
-        "location": serialize_locations(location)
-    })
-
-@login_required
-@require_POST
-def activate_location(request, location_id):
-    try:
-        with transaction.atomic():
-            location = get_object_or_404(
-                SavedLocation,
-                pk=location_id,
-                user=request.user
-            )
-
-            SavedLocation.objects.filter(
-                user=request.user,
-                is_active=True
-            ).exclude(
-                pk=location.pk
-            ).update(is_active=False)
-
-            location.is_active = True
-            location.save(update_fields=["is_active"])
-
-    except IntegrityError:
-        return JsonResponse({
-            "error": "Terjadi konflik saat memilih lokasi."
-        }, status=409)
-
-    return JsonResponse({
-        "status": "success",
-        "location": serialize_locations(location)
-    })
-
-@login_required
-@require_POST
-def delete_location(request, location_id):
-    location = get_object_or_404(
-        SavedLocation,
-        pk=location_id,
-        user=request.user
-    )
-
-    was_active = location.is_active
-    location.delete()
-
-    return JsonResponse({
-        "status": "success",
-        "was_active": was_active
-    })
-
-@login_required
-def survey_reusable_list_json(request):
-    item_type = request.GET.get("item_type", "").strip()
-    surveys = ReusableItemSurvey.objects.filter(user=request.user)
-    if item_type in dict(ReusableItemSurvey.ITEM_CHOICES):
-        surveys = surveys.filter(item_type=item_type)
-    surveys = surveys.order_by("-created_at")
-    data = [
-        {
-            "id": str(item.id),
-            "item": item.get_item_type_display(),
-            "item_val": item.item_type,
-            "quantity": item.quantity,
-            "uses_per_week": item.uses_per_week,
-            "notes": item.notes or "",
-            "daily_emission_co2": float(item.daily_emission_co2),
-        }
-        for item in surveys
-    ]
-    return JsonResponse({"status": "success", "data": data})  
- 
-@login_required
-def add_reusable_survey(request):
-    if request.method == "POST":
-        form = ReusableItemSurveyForm(request.POST)
-        if form.is_valid():
-            item = form.save(commit=False)
-            item.user = request.user
-            item.save()
-            _sync_daily_emission_logs(request.user)
-            return JsonResponse({
-                'status': 'success',
-                'message': 'Data berhasil ditambahkan.'
-            }, status=201)
-        else:
-            return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
- 
-    return JsonResponse({"status": "error", "message": "Method tidak diizinkan."}, status=405)
-
-@login_required
-def edit_reusable_survey(request, survey_id):
-    item = get_object_or_404(ReusableItemSurvey, id=survey_id, user=request.user)
- 
-    if request.method == "POST":
-        form = ReusableItemSurveyForm(request.POST, instance=item)
-        if form.is_valid():
-            form.save()
-            _sync_daily_emission_logs(request.user)
-            return JsonResponse({'status': 'success', 'message': 'Data berhasil diperbarui.'}, status=200)
-        else:
-            return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
- 
-    return JsonResponse({"status": "error", "message": "Method tidak diizinkan."}, status=405)
- 
- 
-@login_required
-def delete_reusable_survey(request, survey_id):
-    item = get_object_or_404(ReusableItemSurvey, id=survey_id, user=request.user)
- 
-    if request.method == "POST":
-        item.delete()
-        _sync_daily_emission_logs(request.user)
-        return JsonResponse({'status': 'success', 'message': 'Data berhasil dihapus.'}, status=200)
- 
-    return JsonResponse({"status": "error", "message": "Method tidak diizinkan."}, status=405)

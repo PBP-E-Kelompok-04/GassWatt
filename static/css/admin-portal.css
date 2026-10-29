@@ -39,6 +39,29 @@
 
 }
 
+/* Transisi pada kondisi default. */
+.admin-card,
+.metric-card,
+.admin-chart-card {
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.25s ease;
+    will-change: transform, box-shadow;
+    cursor: pointer;
+}
+
+
+/* Efek pop-up saat kursor diarahkan ke box (hover) */
+.admin-card:hover,
+.metric-card:hover,
+.admin-chart-card:hover {
+    transform: translateY(-6px) scale(1.01);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08),
+                0 4px 12px rgba(22, 137, 93, 0.12);
+    border-color:rgba(22, 137, 93, 0.4) ;
+
+}
+
 .admin-metrics-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);

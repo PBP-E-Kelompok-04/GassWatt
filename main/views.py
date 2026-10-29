@@ -3,13 +3,12 @@ import math, json
 
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError, transaction
-from django.db.models import Sum
+from django.db.models import Sum, Count
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render, redirect
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.contrib.auth.models import User
-
 
 
 from django.contrib import messages
@@ -181,6 +180,7 @@ def show_dashboard(request):
                                          .aggregate(total=Sum('daily_consumption_kwh'))['total'] or 0)
 
     # 4. Batasi maksimal 3 rekomendasi teratas agar dashboard tetap bersih
+            
     context = {
         'target_data': target_weekly,
         'recommendations': recommendations,  

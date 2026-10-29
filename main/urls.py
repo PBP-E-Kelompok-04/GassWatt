@@ -1,15 +1,22 @@
 from django.urls import path
 
-from main.views import(
-    show_home, show_dashboard, show_dashboard_survey, show_dashboard_weather, 
+from main.views.views import (
+    show_dashboard, show_dashboard_survey, show_dashboard_weather, 
     survey_transport_list_json, add_transport_survey, edit_transport_survey, delete_transport_survey,
     survey_electricity_list_json, add_electricity_survey, edit_electricity_survey, delete_electricity_survey,
     survey_reusable_list_json, add_reusable_survey, edit_reusable_survey, delete_reusable_survey,
     emission_dashboard, emission_chart_api, daily_energy_chart_api,
-    show_faq, show_about,
     admin_dashboard, kelola_pengguna, delete_user, kelola_faq, add_faq, edit_faq, delete_faq,
     search_location_api, fetch_weather_api, list_locations, 
     save_location, update_location, activate_location, delete_location,
+)
+
+from main.views.view_main import (
+    show_home, show_faq, show_about,
+)
+
+from main.views.view_auth import (
+    show_login, login_user, show_register, register_user, logout_user,
 )
 
 app_name = "main"
@@ -20,17 +27,18 @@ urlpatterns = [
     path("faq/", show_faq, name="show_faq"),
     path("about/", show_about, name="show_about"),
 
+    # Auth
+    path("login/", show_login, name="show_login"),
+    path("login/submit/", login_user, name="login_user"),
+    path("register/", show_register, name="show_register"),
+    path("register/submit/", register_user, name="register_user"),
+    path("logout/", logout_user, name="logout_user"),
+
     # Dashboard
     path("dashboard/", show_dashboard, name="show_dashboard"),
     path("dashboard/survey/", show_dashboard_survey, name="show_dashboard_survey"),
     path('dashboard/emission/', emission_dashboard, name='emission_dashboard'),
     path("dashboard/weather/", show_dashboard_weather, name="show_dashboard_weather"),
-
-    # Survey: transport
-    path("dashboard/survey/list/", survey_transport_list_json, name="survey_transport_list_json"),
-    path('dashboard/survey/add/', add_transport_survey, name='add_transport_survey'),
-    path('dashboard/survey/edit/<uuid:survey_id>/', edit_transport_survey, name='edit_transport_survey'),
-    path('dashboard/survey/delete/<uuid:survey_id>/', delete_transport_survey, name='delete_transport_survey'),
 
     # Survey: electricity
     path("dashboard/survey/electricity/list/", survey_electricity_list_json, name="survey_electricity_list_json"),

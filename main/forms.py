@@ -1,5 +1,5 @@
 from django import forms
-from .models import TransportationSurvey, SavedLocation, ReusableItemSurvey, ElectricitySurvey
+from .models.model_survey import TransportationSurvey, SavedLocation, ReusableItemSurvey, ElectricitySurvey
 
 class TransportationSurveyForm(forms.ModelForm):
     class Meta:

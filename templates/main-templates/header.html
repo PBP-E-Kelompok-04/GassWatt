@@ -16,14 +16,16 @@
                 <a href="{% url 'main:show_faq' %}"
                     class="nav-link {% if current == 'show_faq' %}active{% endif %}">FAQ</a>
             </nav>
-
             <div class="header-actions">
                 {% if user.is_authenticated %}
                     <span class="nav-user">{{ user.username }}</span>
-                    <a href="{% url 'logout_user' %}" class="btn btn-outline">Logout</a>
+                    <form action="{% url 'main:logout_user' %}" method="post" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline">Logout</button>
+                        </form>
                 {% else %}
-                    <a href="{% url 'show_login' %}" class="btn btn-outline">Sign In</a>
-                    <a href="{% url 'show_register' %}" class="btn btn-solid">Sign Up</a>
+                    <a href="{% url 'main:show_login' %}" class="btn btn-outline">Sign In</a>
+                    <a href="{% url 'main:show_register' %}" class="btn btn-solid">Sign Up</a>
                 {% endif %}
             </div>
         </div>

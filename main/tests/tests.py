@@ -8,14 +8,14 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import (
+from .models.model_survey import (
     TransportationSurvey,
     SavedLocation,
     ElectricitySurvey,
     ReusableItemSurvey,
     DailyEmissionLog,
 )
-from .views import get_weekly_target_summary
+from .views.views import get_weekly_target_summary
 
 from . import weather_logic
 from .forms import LocationForm, LocationRenameForm, ElectricitySurveyForm

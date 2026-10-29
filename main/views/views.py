@@ -15,9 +15,7 @@ from django.contrib import messages
 
 from django.views.decorators.http import require_GET, require_POST
 
-from authentication.views import show_login, login_user, show_register, register_user
-
-from .models import (
+from ..models.model_survey import (
     TransportationSurvey,
     ElectricitySurvey,
     ReusableItemSurvey,
@@ -27,7 +25,7 @@ from .models import (
 )
 
 
-from .forms import (
+from ..forms import (
     TransportationSurveyForm,
     ElectricitySurveyForm,
     ReusableItemSurveyForm,
@@ -35,14 +33,11 @@ from .forms import (
     LocationRenameForm,
 )
 
-from .weather_logic import (
+from ..weather_logic import (
     WeatherServiceError,
     get_weather,
     search_locations,
 )
-
-def show_home(request):
-    return render(request, "main-templates/home.html")
 
 def get_weekly_target_summary(user, target_goal_pct=10.0):
     today = timezone.now().date()
@@ -553,39 +548,6 @@ def daily_energy_chart_api(request):
             }
         ]
     })
-
-def show_faq(request):
-    faq_list = FAQ.objects.filter(
-        is_active=True
-    ).order_by("order", "id")
-
-    return render(request, "main-templates/faq.html", {
-        "faq_list": faq_list,
-    })
-
-def get_faq_json(request):
-    faqs = FAQ.objects.all()
-    data = []
-
-    for faq in faqs:
-        data.append({
-            "pk": str(faq.id),
-            "fields": {
-                "question": faq.question,
-                "answer": faq.answer,
-                "order": faq.order,
-                "is_active": faq.is_active,
-            }
-        })
-
-    return JsonResponse(data, safe=False)
-
-def show_about(request):
-    context = {
-        "name": "GassWatt",
-    }
-
-    return render(request, "main-templates/about.html", context)
 
 
 @login_required

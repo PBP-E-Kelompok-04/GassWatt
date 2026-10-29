@@ -17,10 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 
-from GassWatt.view import landing_page
-
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("", include("authentication.urls")),
     path("", include("main.urls")),
 ]

@@ -132,6 +132,19 @@ def show_dashboard(request):
     today_kwh = float(ElectricitySurvey.objects.filter(user=request.user, created_at__date=today)
                                                .aggregate(total=Sum('daily_consumption_kwh'))['total'] or 0)
 
+    if today_kwh == 0:
+        last_survey = ElectricitySurvey.objects.filter(
+            user=request.user,
+            created_at__date__lt=today
+        ).order_by('-created_at').first()
+
+        if last_survey:
+            last_date = timezone.localtime(last_survey.created_at).date()
+
+            today_kwh = float(
+                ElectricitySurvey.objects.filter(user=request.user, created_at__date=last_date)
+                                         .aggregate(total=Sum('daily_consumption_kwh'))['total'] or 0)
+
     # 4. Batasi maksimal 3 rekomendasi teratas agar dashboard tetap bersih
     context = {
         'target_data': target_weekly,

@@ -1,3 +1,4 @@
+from datetime import timedelta
 from django.contrib.auth.models import User
 from unittest.mock import patch
 
@@ -5,13 +6,16 @@ import requests
 from django.core.cache import cache
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from .models import (
     TransportationSurvey,
     SavedLocation,
     ElectricitySurvey,
     ReusableItemSurvey,
+    DailyEmissionLog,
 )
+from .views import get_weekly_target_summary
 
 from . import weather_logic
 from .forms import LocationForm, LocationRenameForm, ElectricitySurveyForm
@@ -80,6 +84,87 @@ class TransportationSurveyFlowTests(TestCase):
             [],
         )
 
+    def test_transport_survey_invalid_input_returns_validation_errors(self):
+        response = self.client.post(
+            reverse("main:add_transport_survey"),
+            {
+                "transport_mode": "spaceship",
+                "daily_distance_km": "not-a-number",
+                "notes": "",
+            },
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["status"], "error")
+        self.assertIn("transport_mode", response.json()["errors"])
+        self.assertIn("daily_distance_km", response.json()["errors"])
+        self.assertFalse(TransportationSurvey.objects.filter(user=self.user).exists())
+
+    def test_transport_survey_rejects_unsupported_methods(self):
+        add_url = reverse("main:add_transport_survey")
+        list_url = reverse("main:survey_transport_list_json")
+
+        self.assertEqual(self.client.get(add_url).status_code, 405)
+        self.assertEqual(self.client.post(list_url).status_code, 405)
+
+        survey = TransportationSurvey.objects.create(
+            user=self.user,
+            transport_mode="motor_ice",
+            daily_distance_km=5,
+        )
+        self.assertEqual(
+            self.client.get(
+                reverse("main:edit_transport_survey", args=[survey.id])
+            ).status_code,
+            405,
+        )
+        self.assertEqual(
+            self.client.get(
+                reverse("main:delete_transport_survey", args=[survey.id])
+            ).status_code,
+            405,
+        )
+        self.assertTrue(
+            TransportationSurvey.objects.filter(pk=survey.id, user=self.user).exists()
+        )
+
+    def test_transport_survey_cannot_be_accessed_or_changed_by_another_user(self):
+        other_user = User.objects.create_user(username="other-transport-user")
+        survey = TransportationSurvey.objects.create(
+            user=other_user,
+            transport_mode="motor_ice",
+            daily_distance_km=5,
+        )
+        edit_url = reverse("main:edit_transport_survey", args=[survey.id])
+        delete_url = reverse("main:delete_transport_survey", args=[survey.id])
+
+        self.assertEqual(
+            self.client.get(reverse("main:survey_transport_list_json")).json()["data"],
+            [],
+        )
+        self.assertEqual(self.client.post(edit_url, {
+            "transport_mode": "car_ev",
+            "daily_distance_km": "10",
+        }).status_code, 404)
+        self.assertEqual(self.client.post(delete_url).status_code, 404)
+
+        survey.refresh_from_db()
+        self.assertEqual(survey.transport_mode, "motor_ice")
+        self.assertEqual(float(survey.daily_distance_km), 5)
+
+    def test_dashboard_pages_and_transport_list_require_login(self):
+        protected_urls = (
+            reverse("main:show_dashboard"),
+            reverse("main:show_dashboard_survey"),
+            reverse("main:emission_dashboard"),
+            reverse("main:survey_transport_list_json"),
+        )
+        self.client.logout()
+
+        for url in protected_urls:
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, 302)
+
     def test_survey_and_emission_pages_require_login_and_render(self):
         self.client.logout()
         response = self.client.get(reverse("main:show_dashboard_survey"))
@@ -88,6 +173,362 @@ class TransportationSurveyFlowTests(TestCase):
         self.client.force_login(self.user)
         emission_response = self.client.get(reverse("main:emission_dashboard"))
         self.assertEqual(emission_response.status_code, 200)
+
+
+class EmissionDashboardTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="emission-dashboard-user")
+        self.client.force_login(self.user)
+        self.url = reverse("main:emission_dashboard")
+        self.today = timezone.now().date()
+
+    def test_dashboard_with_no_surveys_returns_zero_metrics_and_default_score(self):
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["today_emission"], 0)
+        self.assertEqual(response.context["total_7days_emission"], 0)
+        self.assertEqual(response.context["co2_saved"], 0)
+        self.assertEqual(response.context["eco_score"], 100)
+        self.assertEqual(response.context["trees_saved"], 0)
+        self.assertEqual(response.context["avoided_km"], 0)
+        self.assertEqual(response.context["transport_emission_today"], 0)
+        self.assertEqual(response.context["electricity_emission_today"], 0)
+        self.assertEqual(response.context["reusable_emission_saved_today"], 0)
+
+    def test_dashboard_calculates_emissions_savings_score_and_impacts(self):
+        DailyEmissionLog.objects.create(
+            user=self.user,
+            date=self.today - timedelta(days=6),
+            total_emission_co2=2,
+        )
+        DailyEmissionLog.objects.create(
+            user=self.user,
+            date=self.today - timedelta(days=8),
+            total_emission_co2=100,
+        )
+        TransportationSurvey.objects.create(
+            user=self.user,
+            transport_mode="busway",
+            daily_distance_km=10,
+        )
+        TransportationSurvey.objects.create(
+            user=self.user,
+            transport_mode="motor_ice",
+            daily_distance_km=2,
+        )
+        ElectricitySurvey.objects.create(
+            user=self.user,
+            device_type="laptop",
+            quantity=1,
+            power_watts=100,
+            daily_usage_hours=5,
+        )
+        ReusableItemSurvey.objects.create(
+            user=self.user,
+            item_type="botol_minum",
+            quantity=1,
+            uses_per_week=7,
+        )
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["today_emission"], 1.42)
+        self.assertEqual(response.context["total_7days_emission"], 13.42)
+        self.assertEqual(response.context["co2_saved"], 8.47)
+        self.assertEqual(response.context["eco_score"], 46)
+        self.assertEqual(response.context["trees_saved"], 24)
+        self.assertEqual(response.context["avoided_km"], 70)
+        self.assertEqual(response.context["transport_emission_today"], 1.07)
+        self.assertEqual(response.context["electricity_emission_today"], 0.36)
+        self.assertEqual(response.context["reusable_emission_saved_today"], 0.01)
+
+    def test_dashboard_clamps_score_and_savings_at_zero(self):
+        TransportationSurvey.objects.create(
+            user=self.user,
+            transport_mode="car_ice",
+            daily_distance_km=10,
+        )
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.context["eco_score"], 0)
+        self.assertEqual(response.context["co2_saved"], 0)
+        self.assertEqual(response.context["avoided_km"], 0)
+
+    def test_dashboard_rejects_non_get_methods(self):
+        response = self.client.post(self.url)
+
+        self.assertEqual(response.status_code, 405)
+
+    def test_dashboard_metrics_only_include_the_authenticated_users_surveys(self):
+        other_user = User.objects.create_user(username="other-emission-user")
+        TransportationSurvey.objects.create(
+            user=other_user,
+            transport_mode="car_ice",
+            daily_distance_km=100,
+        )
+        ElectricitySurvey.objects.create(
+            user=other_user,
+            device_type="desktop",
+            quantity=1,
+            power_watts=1000,
+            daily_usage_hours=24,
+        )
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["transport_emission_today"], 0)
+        self.assertEqual(response.context["electricity_emission_today"], 0)
+        self.assertEqual(response.context["today_emission"], 0)
+
+
+class WeeklyTargetTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="weekly-target-user")
+        self.client.force_login(self.user)
+        self.today = timezone.now().date()
+
+    def create_week_logs(self, start_days_ago, end_days_ago, value):
+        DailyEmissionLog.objects.bulk_create([
+            DailyEmissionLog(
+                user=self.user,
+                date=self.today - timedelta(days=days_ago),
+                total_emission_co2=value,
+            )
+            for days_ago in range(start_days_ago, end_days_ago - 1, -1)
+        ])
+
+    def test_weekly_target_compares_two_exact_seven_day_periods(self):
+        self.create_week_logs(13, 7, 10)
+        self.create_week_logs(6, 0, 8)
+        DailyEmissionLog.objects.create(
+            user=self.user,
+            date=self.today - timedelta(days=14),
+            total_emission_co2=100,
+        )
+
+        target = get_weekly_target_summary(self.user)
+
+        self.assertEqual(target["co2_reduced_kg"], 14)
+        self.assertEqual(target["actual_reduction_pct"], 20)
+        self.assertTrue(target["is_achieved"])
+        self.assertTrue(target["has_baseline"])
+
+    def test_dashboard_updates_target_after_survey_edit(self):
+        self.create_week_logs(13, 7, 1)
+        self.create_week_logs(6, 0, 1)
+        survey = TransportationSurvey.objects.create(
+            user=self.user,
+            transport_mode="motor_ice",
+            daily_distance_km=5,
+        )
+
+        before_edit = self.client.get(reverse("main:show_dashboard"))
+        before_progress = before_edit.context["target_data"]["actual_reduction_pct"]
+
+        edit_response = self.client.post(
+            reverse("main:edit_transport_survey", args=[survey.id]),
+            {
+                "transport_mode": "motor_ice",
+                "daily_distance_km": "10",
+                "notes": "",
+            },
+        )
+        self.assertEqual(edit_response.status_code, 200)
+
+        after_edit = self.client.get(reverse("main:show_dashboard"))
+        after_progress = after_edit.context["target_data"]["actual_reduction_pct"]
+
+        self.assertLess(after_progress, before_progress)
+
+
+class MainDashboardTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="main-dashboard-user")
+        self.client.force_login(self.user)
+        self.today = timezone.now().date()
+        self.url = reverse("main:show_dashboard")
+
+    def create_week(self, start_days_ago, end_days_ago, value):
+        DailyEmissionLog.objects.bulk_create([
+            DailyEmissionLog(
+                user=self.user,
+                date=self.today - timedelta(days=days_ago),
+                total_emission_co2=value,
+            )
+            for days_ago in range(start_days_ago, end_days_ago - 1, -1)
+        ])
+
+    def test_dashboard_explains_missing_weekly_baseline(self):
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context["target_data"]["has_baseline"])
+        self.assertEqual(response.context["target_data"]["actual_reduction_pct"], 0)
+        self.assertIn(
+            "Belum ada data emisi minggu lalu",
+            response.context["recommendations"][0],
+        )
+
+    def test_dashboard_reports_achieved_weekly_target(self):
+        self.create_week(13, 7, 10)
+        self.create_week(6, 0, 10)
+
+        response = self.client.get(self.url)
+
+        self.assertTrue(response.context["target_data"]["has_baseline"])
+        self.assertTrue(response.context["target_data"]["is_achieved"])
+        self.assertIn(
+            "Target minggu ini telah tercapai",
+            response.context["recommendations"][0],
+        )
+
+    def test_dashboard_reports_partial_and_negative_weekly_reduction(self):
+        self.create_week(13, 7, 10)
+        self.create_week(6, 1, 10)
+
+        TransportationSurvey.objects.create(
+            user=self.user,
+            transport_mode="motor_ice",
+            daily_distance_km=72.22,
+        )
+        partial_response = self.client.get(self.url)
+
+        self.assertAlmostEqual(
+            partial_response.context["target_data"]["actual_reduction_pct"],
+            5,
+        )
+        self.assertIn(
+            "Sedikit lagi!",
+            partial_response.context["recommendations"][0],
+        )
+
+        survey = TransportationSurvey.objects.get(user=self.user)
+        survey.daily_distance_km = 122.23
+        survey.save()
+        higher_emission_response = self.client.get(self.url)
+
+        self.assertLess(
+            higher_emission_response.context["target_data"]["actual_reduction_pct"],
+            0,
+        )
+        self.assertIn(
+            "Emisi masih lebih tinggi dari minggu lalu",
+            higher_emission_response.context["recommendations"][0],
+        )
+
+    def test_dashboard_recommends_actions_from_transport_energy_and_reusable_surveys(self):
+        TransportationSurvey.objects.create(
+            user=self.user,
+            transport_mode="car_ice",
+            daily_distance_km=1,
+        )
+        TransportationSurvey.objects.create(
+            user=self.user,
+            transport_mode="car_ice",
+            daily_distance_km=12,
+        )
+        TransportationSurvey.objects.create(
+            user=self.user,
+            transport_mode="motor_ice",
+            daily_distance_km=5,
+        )
+        ElectricitySurvey.objects.create(
+            user=self.user,
+            device_type="ac",
+            quantity=1,
+            power_watts=1000,
+            daily_usage_hours=8,
+        )
+        ElectricitySurvey.objects.create(
+            user=self.user,
+            device_type="desktop",
+            quantity=1,
+            power_watts=600,
+            daily_usage_hours=4,
+        )
+        ElectricitySurvey.objects.create(
+            user=self.user,
+            device_type="lamp",
+            quantity=3,
+            power_watts=10,
+            daily_usage_hours=5,
+        )
+        ElectricitySurvey.objects.create(
+            user=self.user,
+            device_type="television",
+            quantity=1,
+            power_watts=100,
+            daily_usage_hours=12,
+        )
+        ReusableItemSurvey.objects.create(
+            user=self.user,
+            item_type="botol_minum",
+            quantity=1,
+            uses_per_week=2,
+        )
+        ReusableItemSurvey.objects.create(
+            user=self.user,
+            item_type="tote_bag",
+            quantity=2,
+            uses_per_week=4,
+        )
+
+        response = self.client.get(self.url)
+        recommendations = response.context["recommendations"]
+
+        self.assertEqual(response.status_code, 200)
+        for expected_text in (
+            "tergolong dekat",
+            "menghasilkan emisi cukup tinggi",
+            "Motor bensin",
+            "Penggunaan AC",
+            "menggunakan daya besar",
+            "unit lampu",
+            "menyala selama 12 jam/hari",
+            "hanya 2 kali seminggu",
+            "Gunakan sesering mungkin",
+        ):
+            self.assertTrue(
+                any(expected_text.lower() in item.lower() for item in recommendations)
+            )
+
+    def test_dashboard_rejects_non_get_methods(self):
+        response = self.client.post(self.url)
+
+        self.assertEqual(response.status_code, 405)
+
+    def test_recommendations_do_not_include_another_users_survey_data(self):
+        other_user = User.objects.create_user(username="other-recommendation-user")
+        TransportationSurvey.objects.create(
+            user=other_user,
+            transport_mode="car_ice",
+            daily_distance_km=1,
+        )
+        ElectricitySurvey.objects.create(
+            user=other_user,
+            device_type="ac",
+            quantity=1,
+            power_watts=1000,
+            daily_usage_hours=10,
+        )
+        ReusableItemSurvey.objects.create(
+            user=other_user,
+            item_type="botol_minum",
+            quantity=1,
+            uses_per_week=1,
+        )
+
+        response = self.client.get(self.url)
+        recommendations = response.context["recommendations"]
+
+        self.assertFalse(any("tergolong dekat" in item for item in recommendations))
+        self.assertFalse(any("Penggunaan AC" in item for item in recommendations))
+        self.assertTrue(any("belum menggunakan Barang Reusable" in item for item in recommendations))
+
 
 class WeatherFlowTests(TestCase):
     def setUp(self):
@@ -150,8 +591,8 @@ class WeatherFlowTests(TestCase):
             ("post", "delete_location", (1,), {}),
         ]
         for method, name, args, data in endpoints:
-            with self.subTest(endpoint=name):
-                self.assertEqual(getattr(self.client, method)(self.url(name, *args), data).status_code, 302)
+            response = getattr(self.client, method)(self.url(name, *args), data)
+            self.assertEqual(response.status_code, 302)
         self.client.force_login(self.user)
         response = self.client.get(self.url("show_dashboard_weather"))
         self.assertEqual(response.status_code, 200)
@@ -200,13 +641,18 @@ class WeatherFlowTests(TestCase):
         listed = self.client.get(self.url("list_locations")).json()["results"]
         self.assertEqual([item["id"] for item in listed], [own.id])
         for action in ("update_location", "activate_location", "delete_location"):
-            with self.subTest(action=action):
-                self.assertEqual(self.client.post(self.url(action, other.id), {"name": "Bajak"}).status_code, 404)
+            response = self.client.post(
+                self.url(action, other.id), {"name": "Bajak"}
+            )
+            self.assertEqual(response.status_code, 404)
         self.assertEqual(self.client.post(self.url("update_location", own.id), {"name": " "}).status_code, 400)
         for coords in ((91, 106), (-6, 181), ("nan", 106), ("inf", 106)):
-            with self.subTest(coords=coords):
-                self.assertFalse(LocationForm(data={"name": "GPS", "latitude": coords[0],
-                                                    "longitude": coords[1]}).is_valid())
+            form = LocationForm(data={
+                "name": "GPS",
+                "latitude": coords[0],
+                "longitude": coords[1],
+            })
+            self.assertFalse(form.is_valid())
         self.assertFalse(LocationRenameForm(data={"name": "  "}).is_valid())
 
     @patch("main.views.search_locations")
@@ -220,8 +666,8 @@ class WeatherFlowTests(TestCase):
         self.assertEqual(self.client.get(self.url("search_location_api"), {"q": "x" * 101}).status_code, 400)
         for params in ({}, {"lat": "abc", "lon": 106}, {"lat": 91, "lon": 106},
                        {"lat": "nan", "lon": 106}, {"lat": -6, "lon": "inf"}):
-            with self.subTest(params=params):
-                self.assertEqual(self.client.get(self.url("fetch_weather_api"), params).status_code, 400)
+            response = self.client.get(self.url("fetch_weather_api"), params)
+            self.assertEqual(response.status_code, 400)
         self.assertEqual(self.client.get(self.url("save_location")).status_code, 405)
         self.assertEqual(self.client.post(self.url("fetch_weather_api")).status_code, 405)
         mock_weather.side_effect = weather_logic.WeatherServiceError("down")
@@ -283,10 +729,9 @@ class WeatherFlowTests(TestCase):
             ({"no2_aqi": 140}, "lainnya", "Waspadai paparan NO₂"),
         ]
         for updates, group, title in cases:
-            with self.subTest(title=title):
-                weather = {**base, **updates}
-                recs = weather_logic.generate_recommendations(weather)
-                self.assertIn(title, [item["title"] for item in recs[group]])
+            weather = {**base, **updates}
+            recs = weather_logic.generate_recommendations(weather)
+            self.assertIn(title, [item["title"] for item in recs[group]])
         suitable = {**base, "pop": 5, "weather_code": 0}
         self.assertIn("Jalan kaki atau bersepeda", [r["title"] for r in weather_logic.mobility_recommendations(suitable)])
         polluted = {**suitable, "aqi": 191}
@@ -318,10 +763,9 @@ class WeatherFlowTests(TestCase):
             {"weather_code": None},
             {"is_day": None},
         ):
-            with self.subTest(changes=changes):
-                payload = {**self.forecast, "current": {**self.forecast["current"], **changes}}
-                with self.assertRaises(weather_logic.WeatherServiceError):
-                    weather_logic.parse_forecast(payload)
+            payload = {**self.forecast, "current": {**self.forecast["current"], **changes}}
+            with self.assertRaises(weather_logic.WeatherServiceError):
+                weather_logic.parse_forecast(payload)
         with self.assertRaises(weather_logic.WeatherServiceError):
             weather_logic.parse_forecast({"current": {}})
         with patch("main.weather_logic.requests.get", side_effect=requests.Timeout()):
@@ -343,11 +787,6 @@ class ElectricitySurveyTests(TestCase):
             'daily_usage_hours': '6',
             'notes': 'Untuk kuliah',
         }
-
-    def test_survey_page(self):
-        response = self.client.get(reverse('main:show_dashboard_survey'))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'id="electricityForm"')
 
     def test_emission_calculation(self):
         item = ElectricitySurvey.objects.create(

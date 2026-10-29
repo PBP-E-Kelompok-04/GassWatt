@@ -15,21 +15,40 @@ from main.views import(
 app_name = "main"
 
 urlpatterns = [
+    # Main
     path("", show_home, name="show_home"),
+    path("faq/", show_faq, name="show_faq"),
+    path("about/", show_about, name="show_about"),
+
+    # Dashboard
     path("dashboard/", show_dashboard, name="show_dashboard"),
     path("dashboard/survey/", show_dashboard_survey, name="show_dashboard_survey"),
+    path('dashboard/emission/', emission_dashboard, name='emission_dashboard'),
+    path("dashboard/weather/", show_dashboard_weather, name="show_dashboard_weather"),
+
+    # Survey: transport
     path("dashboard/survey/list/", survey_transport_list_json, name="survey_transport_list_json"),
     path('dashboard/survey/add/', add_transport_survey, name='add_transport_survey'),
     path('dashboard/survey/edit/<uuid:survey_id>/', edit_transport_survey, name='edit_transport_survey'),
     path('dashboard/survey/delete/<uuid:survey_id>/', delete_transport_survey, name='delete_transport_survey'),
+
+    # Survey: electricity
+    path("dashboard/survey/electricity/list/", survey_electricity_list_json, name="survey_electricity_list_json"),
+    path('dashboard/survey/electricity/add/', add_electricity_survey, name='add_electricity_survey'),
+    path('dashboard/survey/electricity/edit/<uuid:survey_id>/', edit_electricity_survey, name='edit_electricity_survey'),
+    path('dashboard/survey/electricity/delete/<uuid:survey_id>/', delete_electricity_survey, name='delete_electricity_survey'),
+
+     # Survey: reusable
     path("dashboard/survey/reusable/list/", survey_reusable_list_json, name="survey_reusable_list_json"),
     path("dashboard/survey/reusable/add/", add_reusable_survey, name="add_reusable_survey"),
     path("dashboard/survey/reusable/edit/<uuid:survey_id>/", edit_reusable_survey, name="edit_reusable_survey"),
     path("dashboard/survey/reusable/delete/<uuid:survey_id>/", delete_reusable_survey, name="delete_reusable_survey"),
-    path('dashboard/emission/', emission_dashboard, name='emission_dashboard'),
+
+    # Charts API
     path('api/emission-chart/', emission_chart_api, name='api_emission_chart'),
     path('api/daily-energy-chart/', daily_energy_chart_api, name='daily_energy_chart_api'),
-    path("dashboard/weather/", show_dashboard_weather, name="show_dashboard_weather"),
+
+    # Weather / locations API
     path("api/search-location/", search_location_api, name="search_location_api"),
     path("api/fetch-weather/", fetch_weather_api, name="fetch_weather_api"),
     path("api/locations/", list_locations, name="list_locations"),
@@ -37,8 +56,8 @@ urlpatterns = [
     path("api/locations/<int:location_id>/update/", update_location, name="update_location"),
     path("api/locations/<int:location_id>/activate/", activate_location, name="activate_location"),
     path("api/locations/<int:location_id>/delete/", delete_location, name="delete_location"),
-    path("faq/", show_faq, name="show_faq"),
-    path("about/", show_about, name="show_about"),
+
+    # Admin portal
     path('admin-portal/', admin_dashboard, name='admin_dashboard'),
     path('admin-portal/pengguna/', kelola_pengguna, name='kelola_pengguna'),
     path('admin-portal/<int:user_id>/delete/', delete_user, name='delete_user'),
@@ -46,8 +65,4 @@ urlpatterns = [
     path('admin-portal/faq/add/', add_faq, name='add_faq'),
     path('admin-portal/<int:faq_id>/edit/', edit_faq, name='edit_faq'),
     path('admin-portal/<int:faq_id>/delete/', delete_faq, name='delete_faq'),
-    path("dashboard/survey/electricity/list/", survey_electricity_list_json, name="survey_electricity_list_json"),
-    path('dashboard/survey/electricity/add/', add_electricity_survey, name='add_electricity_survey'),
-    path('dashboard/survey/electricity/edit/<uuid:survey_id>/', edit_electricity_survey, name='edit_electricity_survey'),
-    path('dashboard/survey/electricity/delete/<uuid:survey_id>/', delete_electricity_survey, name='delete_electricity_survey'),
 ]

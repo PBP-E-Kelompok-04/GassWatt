@@ -166,11 +166,9 @@ def show_dashboard(request):
                 ElectricitySurvey.objects.filter(user=request.user, created_at__date=last_date)
                                          .aggregate(total=Sum('daily_consumption_kwh'))['total'] or 0)
 
-    # 4. Batasi maksimal 3 rekomendasi teratas agar dashboard tetap bersih
-            
     context = {
         'target_data': target_weekly,
-        'recommendations': recommendations,  
+        'recommendations': recommendations,
         'today_kwh': today_kwh
     }
     return render(request, "dashboard-templates/dashboard.html", context)
@@ -225,8 +223,7 @@ def _sync_daily_emission_logs(user):
 @require_GET
 def emission_dashboard(request):
     user = request.user
-    
-    # Sinkronisasi data log harian
+
     _sync_daily_emission_logs(user)
 
     today = timezone.now().date()
@@ -235,7 +232,6 @@ def emission_dashboard(request):
     today_log = DailyEmissionLog.objects.filter(user=user, date=today).first()
     today_emission = float(today_log.total_emission_co2) if today_log else 0.0
 
-    # 2. Total emisi RIIL 7 HARI TERAKHIR dari DailyEmissionLog
     total_7days_emission = float(
         DailyEmissionLog.objects.filter(
             user=user,
@@ -243,7 +239,6 @@ def emission_dashboard(request):
             date__lte=today
         ).aggregate(total=Sum('total_emission_co2'))['total'] or 0.0
     )
-
 
     daily_survey_distance = float(
         TransportationSurvey.objects.filter(user=user).aggregate(
@@ -269,29 +264,23 @@ def emission_dashboard(request):
         )['total'] or 0.0
     )
 
-    # Akumulasi jarak 7 hari 
     total_7days_distance = daily_survey_distance * 7.0
 
-    # Baseline 7 Hari jika seluruh perjalanan menggunakan Mobil Bensin (0.190 kg CO2/km)
     transport_baseline_7days = total_7days_distance * 0.190
     electricity_7days = electricity_daily * 7.0
     baseline_7days_emission = transport_baseline_7days + electricity_7days
     estimated_7days_emission = (transport_daily + electricity_daily) * 7.0
 
-    # 1. Penghematan CO2 Seminggu (Baseline Mobil 7 Hari - Emisi Riil 7 Hari)
     co2_saved_7days = max(0.0, transport_baseline_7days - transport_daily * 7.0)
 
-    # 2. Eco Score Seminggu (Efisiensi emisi seminggu terakhir)
     if baseline_7days_emission > 0:
         score = (1.0 - (estimated_7days_emission / baseline_7days_emission)) * 100
         eco_score = max(0, min(100, round(score)))
     else:
         eco_score = 100
 
-    # 3. Beban Serap Pohon HARI INI (1 pohon dewasa ~ 0.06 kg CO2e / hari)
     trees_saved = round(today_emission / 0.06) if today_emission > 0 else 0
 
-    # 4. Perjalanan Dihindari seminggu (Moda ramah lingkungan x 7 hari)
     eco_friendly_modes = ['walk_bike', 'krl_mrt_lrt', 'busway']
     daily_eco_distance = float(
         TransportationSurvey.objects.filter(
@@ -302,17 +291,17 @@ def emission_dashboard(request):
     avoided_km_7days = daily_eco_distance * 7.0
 
     context = {
-        'today_emission': round(today_emission, 2),       
-        'total_7days_emission': round(total_7days_emission, 2), 
-        'co2_saved': round(co2_saved_7days, 2),            
-        'eco_score': eco_score,                            
-        'trees_saved': trees_saved,                        
-        'avoided_km': round(avoided_km_7days, 2),    
+        'today_emission': round(today_emission, 2),
+        'total_7days_emission': round(total_7days_emission, 2),
+        'co2_saved': round(co2_saved_7days, 2),
+        'eco_score': eco_score,
+        'trees_saved': trees_saved,
+        'avoided_km': round(avoided_km_7days, 2),
         'transport_emission_today': round(transport_daily, 2),
-        'electricity_emission_today': round(electricity_daily, 2),      
+        'electricity_emission_today': round(electricity_daily, 2),
         'reusable_emission_saved_today': round(reusable_daily, 2),
     }
-    
+
     return render(request, 'dashboard-templates/dashboard-emission.html', context)
 
 @login_required
@@ -329,7 +318,7 @@ def emission_chart_api(request):
         target_date = today - timedelta(days=i)
         log = DailyEmissionLog.objects.filter(user=user, date=target_date).first()
         val = float(log.total_emission_co2) if log else 0.0
-        
+
         label = f"{day_names[target_date.weekday()]} ({target_date.day})"
         chart_dates.append(label)
         chart_values.append(val)
@@ -361,7 +350,7 @@ def daily_energy_chart_api(request):
 
         if total == 0 and chart_values:
             total = chart_values[-1]
-        
+
         label = f"{day_names[target_date.weekday()]} ({target_date.day})"
         chart_dates.append(label)
         chart_values.append(total)
@@ -439,140 +428,6 @@ def serialize_locations(location):
     }
 
 
-@login_required
-@require_GET
-def list_locations(request):
-    locations = SavedLocation.objects.filter(
-        user=request.user
-    )
-
-    return JsonResponse({
-        "results": [
-            serialize_locations(location)
-            for location in locations
-        ]
-    })
-
-@login_required
-@require_POST
-def save_location(request):
-    form = LocationForm(request.POST)
-
-    if not form.is_valid():
-        return JsonResponse({
-            "errors": form.errors
-        }, status=400)
-
-    values = form.cleaned_data
-
-    try:
-        with transaction.atomic():
-            SavedLocation.objects.filter(
-                user=request.user,
-                is_active=True
-            ).update(is_active=False)
-
-            location = SavedLocation.objects.filter(
-                user=request.user,
-                latitude=values["latitude"],
-                longitude=values["longitude"],
-            ).first()
-
-            created = location is None
-
-            if created:
-                location = form.save(commit=False)
-                location.user = request.user
-            else:
-                location.name = values["name"]
-
-            location.is_active = True
-            location.save()
-
-    except IntegrityError:
-        return JsonResponse({
-            "error": "Lokasi sedang diubah, coba kembali."
-        }, status=409)
-
-    return JsonResponse({
-        "status": "success",
-        "created": created,
-        "location": serialize_locations(location)
-    }, status=201 if created else 200)
-
-@login_required
-@require_POST
-def update_location(request, location_id):
-    location = get_object_or_404(
-        SavedLocation,
-        pk=location_id,
-        user=request.user
-    )
-
-    form = LocationRenameForm(
-        request.POST,
-        instance=location
-    )
-
-    if not form.is_valid():
-        return JsonResponse({
-            "errors": form.errors
-        }, status=400)
-
-    location = form.save()
-
-    return JsonResponse({
-        "status": "success",
-        "location": serialize_locations(location)
-    })
-
-@login_required
-@require_POST
-def activate_location(request, location_id):
-    try:
-        with transaction.atomic():
-            location = get_object_or_404(
-                SavedLocation,
-                pk=location_id,
-                user=request.user
-            )
-
-            SavedLocation.objects.filter(
-                user=request.user,
-                is_active=True
-            ).exclude(
-                pk=location.pk
-            ).update(is_active=False)
-
-            location.is_active = True
-            location.save(update_fields=["is_active"])
-
-    except IntegrityError:
-        return JsonResponse({
-            "error": "Terjadi konflik saat memilih lokasi."
-        }, status=409)
-
-    return JsonResponse({
-        "status": "success",
-        "location": serialize_locations(location)
-    })
-
-@login_required
-@require_POST
-def delete_location(request, location_id):
-    location = get_object_or_404(
-        SavedLocation,
-        pk=location_id,
-        user=request.user
-    )
-
-    was_active = location.is_active
-    location.delete()
-
-    return JsonResponse({
-        "status": "success",
-        "was_active": was_active
-    })
 @login_required
 @require_GET
 def list_locations(request):

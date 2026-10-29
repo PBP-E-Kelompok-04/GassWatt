@@ -40,7 +40,7 @@ from .weather_logic import (
 )
 
 def show_home(request):
-    return render(request, "home.html")
+    return render(request, "main-templates/home.html")
 
 def get_weekly_target_summary(user, target_goal_pct=10.0):
     today = timezone.now().date()
@@ -498,7 +498,7 @@ def show_faq(request):
         is_active=True
     ).order_by("order", "id")
 
-    return render(request, "faq.html", {
+    return render(request, "main-templates/faq.html", {
         "faq_list": faq_list,
     })
 
@@ -524,7 +524,7 @@ def show_about(request):
         "name": "GassWatt",
     }
 
-    return render(request, "about.html", context)
+    return render(request, "main-templates/about.html", context)
 
 
 

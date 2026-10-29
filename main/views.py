@@ -44,18 +44,23 @@ def show_home(request):
 
 def get_weekly_target_summary(user, target_goal_pct=10.0):
     today = timezone.now().date()
-    seven_days_ago = today - timedelta(days=7)
-    fourteen_days_ago = today - timedelta(days=14)
+    this_week_start = today - timedelta(days=6)
+    last_week_start = today - timedelta(days=13)
+    last_week_end = this_week_start
 
     this_week_raw = DailyEmissionLog.objects.filter(
-        user=user, date__gte=seven_days_ago
+        user=user, date__gte=this_week_start, date__lte=today
     ).aggregate(total=Sum('total_emission_co2'))['total']
     this_week = float(this_week_raw) if this_week_raw is not None else 0.0
 
-    last_week_raw = DailyEmissionLog.objects.filter(
-        user=user, date__gte=fourteen_days_ago, date__lt=seven_days_ago
-    ).aggregate(total=Sum('total_emission_co2'))['total']
-    last_week = float(last_week_raw) if last_week_raw is not None else 0.0
+    last_week_logs = DailyEmissionLog.objects.filter(
+        user=user, date__gte=last_week_start, date__lt=last_week_end
+    )
+    last_week_raw = last_week_logs.aggregate(
+        total=Sum('total_emission_co2')
+    )['total']
+    has_baseline = last_week_logs.count() == 7
+    last_week = float(last_week_raw) if has_baseline and last_week_raw is not None else 0.0
 
     co2_reduced_kg = max(0.0, last_week - this_week)
     actual_reduction_pct = ((last_week - this_week) / last_week * 100) if last_week > 0 else 0.0
@@ -65,7 +70,8 @@ def get_weekly_target_summary(user, target_goal_pct=10.0):
         'co2_reduced_kg': round(co2_reduced_kg, 2),
         'target_goal_pct': round(target_goal_pct, 1),
         'actual_reduction_pct': round(actual_reduction_pct, 1),
-        'is_achieved': is_achieved
+        'is_achieved': is_achieved,
+        'has_baseline': has_baseline,
     }
 
 @login_required
@@ -73,9 +79,12 @@ def show_dashboard(request):
     recommendations = []
     today = timezone.now().date()
 
+    _sync_daily_emission_logs(request.user)
     target_weekly = get_weekly_target_summary(request.user)
 
-    if target_weekly["is_achieved"]:
+    if not target_weekly["has_baseline"]:
+        recommendations.append("Belum ada data emisi minggu lalu untuk menghitung progres target.")
+    elif target_weekly["is_achieved"]:
         recommendations.append("Target minggu ini telah tercapai! Pertahankan pola mobilitas rendah emisi ini.")
     elif target_weekly["actual_reduction_pct"] > 0:
         recommendations.append(f"Sedikit lagi! Kamu sudah memotong {round(target_weekly['actual_reduction_pct'], 1)}% emisi minggu ini.")

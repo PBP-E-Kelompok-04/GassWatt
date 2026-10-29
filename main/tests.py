@@ -1,3 +1,4 @@
+from datetime import timedelta
 from django.contrib.auth.models import User
 from unittest.mock import patch
 
@@ -5,13 +6,16 @@ import requests
 from django.core.cache import cache
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from .models import (
     TransportationSurvey,
     SavedLocation,
     ElectricitySurvey,
     ReusableItemSurvey,
+    DailyEmissionLog,
 )
+from .views import get_weekly_target_summary
 
 from . import weather_logic
 from .forms import LocationForm, LocationRenameForm, ElectricitySurveyForm
@@ -88,6 +92,304 @@ class TransportationSurveyFlowTests(TestCase):
         self.client.force_login(self.user)
         emission_response = self.client.get(reverse("main:emission_dashboard"))
         self.assertEqual(emission_response.status_code, 200)
+
+
+class EmissionDashboardTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="emission-dashboard-user")
+        self.client.force_login(self.user)
+        self.url = reverse("main:emission_dashboard")
+        self.today = timezone.now().date()
+
+    def test_dashboard_with_no_surveys_returns_zero_metrics_and_default_score(self):
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["today_emission"], 0)
+        self.assertEqual(response.context["total_7days_emission"], 0)
+        self.assertEqual(response.context["co2_saved"], 0)
+        self.assertEqual(response.context["eco_score"], 100)
+        self.assertEqual(response.context["trees_saved"], 0)
+        self.assertEqual(response.context["avoided_km"], 0)
+        self.assertEqual(response.context["transport_emission_today"], 0)
+        self.assertEqual(response.context["electricity_emission_today"], 0)
+        self.assertEqual(response.context["reusable_emission_saved_today"], 0)
+
+    def test_dashboard_calculates_emissions_savings_score_and_impacts(self):
+        DailyEmissionLog.objects.create(
+            user=self.user,
+            date=self.today - timedelta(days=6),
+            total_emission_co2=2,
+        )
+        DailyEmissionLog.objects.create(
+            user=self.user,
+            date=self.today - timedelta(days=8),
+            total_emission_co2=100,
+        )
+        TransportationSurvey.objects.create(
+            user=self.user,
+            transport_mode="busway",
+            daily_distance_km=10,
+        )
+        TransportationSurvey.objects.create(
+            user=self.user,
+            transport_mode="motor_ice",
+            daily_distance_km=2,
+        )
+        ElectricitySurvey.objects.create(
+            user=self.user,
+            device_type="laptop",
+            quantity=1,
+            power_watts=100,
+            daily_usage_hours=5,
+        )
+        ReusableItemSurvey.objects.create(
+            user=self.user,
+            item_type="botol_minum",
+            quantity=1,
+            uses_per_week=7,
+        )
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["today_emission"], 1.42)
+        self.assertEqual(response.context["total_7days_emission"], 13.42)
+        self.assertEqual(response.context["co2_saved"], 8.47)
+        self.assertEqual(response.context["eco_score"], 46)
+        self.assertEqual(response.context["trees_saved"], 24)
+        self.assertEqual(response.context["avoided_km"], 70)
+        self.assertEqual(response.context["transport_emission_today"], 1.07)
+        self.assertEqual(response.context["electricity_emission_today"], 0.36)
+        self.assertEqual(response.context["reusable_emission_saved_today"], 0.01)
+
+    def test_dashboard_clamps_score_and_savings_at_zero(self):
+        TransportationSurvey.objects.create(
+            user=self.user,
+            transport_mode="car_ice",
+            daily_distance_km=10,
+        )
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.context["eco_score"], 0)
+        self.assertEqual(response.context["co2_saved"], 0)
+        self.assertEqual(response.context["avoided_km"], 0)
+
+
+class WeeklyTargetTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="weekly-target-user")
+        self.client.force_login(self.user)
+        self.today = timezone.now().date()
+
+    def create_week_logs(self, start_days_ago, end_days_ago, value):
+        DailyEmissionLog.objects.bulk_create([
+            DailyEmissionLog(
+                user=self.user,
+                date=self.today - timedelta(days=days_ago),
+                total_emission_co2=value,
+            )
+            for days_ago in range(start_days_ago, end_days_ago - 1, -1)
+        ])
+
+    def test_weekly_target_compares_two_exact_seven_day_periods(self):
+        self.create_week_logs(13, 7, 10)
+        self.create_week_logs(6, 0, 8)
+        DailyEmissionLog.objects.create(
+            user=self.user,
+            date=self.today - timedelta(days=14),
+            total_emission_co2=100,
+        )
+
+        target = get_weekly_target_summary(self.user)
+
+        self.assertEqual(target["co2_reduced_kg"], 14)
+        self.assertEqual(target["actual_reduction_pct"], 20)
+        self.assertTrue(target["is_achieved"])
+        self.assertTrue(target["has_baseline"])
+
+    def test_dashboard_updates_target_after_survey_edit(self):
+        self.create_week_logs(13, 7, 1)
+        self.create_week_logs(6, 0, 1)
+        survey = TransportationSurvey.objects.create(
+            user=self.user,
+            transport_mode="motor_ice",
+            daily_distance_km=5,
+        )
+
+        before_edit = self.client.get(reverse("main:show_dashboard"))
+        before_progress = before_edit.context["target_data"]["actual_reduction_pct"]
+
+        edit_response = self.client.post(
+            reverse("main:edit_transport_survey", args=[survey.id]),
+            {
+                "transport_mode": "motor_ice",
+                "daily_distance_km": "10",
+                "notes": "",
+            },
+        )
+        self.assertEqual(edit_response.status_code, 200)
+
+        after_edit = self.client.get(reverse("main:show_dashboard"))
+        after_progress = after_edit.context["target_data"]["actual_reduction_pct"]
+
+        self.assertLess(after_progress, before_progress)
+
+
+class MainDashboardTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="main-dashboard-user")
+        self.client.force_login(self.user)
+        self.today = timezone.now().date()
+        self.url = reverse("main:show_dashboard")
+
+    def create_week(self, start_days_ago, end_days_ago, value):
+        DailyEmissionLog.objects.bulk_create([
+            DailyEmissionLog(
+                user=self.user,
+                date=self.today - timedelta(days=days_ago),
+                total_emission_co2=value,
+            )
+            for days_ago in range(start_days_ago, end_days_ago - 1, -1)
+        ])
+
+    def test_dashboard_explains_missing_weekly_baseline(self):
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context["target_data"]["has_baseline"])
+        self.assertEqual(response.context["target_data"]["actual_reduction_pct"], 0)
+        self.assertIn(
+            "Belum ada data emisi minggu lalu",
+            response.context["recommendations"][0],
+        )
+
+    def test_dashboard_reports_achieved_weekly_target(self):
+        self.create_week(13, 7, 10)
+        self.create_week(6, 0, 10)
+
+        response = self.client.get(self.url)
+
+        self.assertTrue(response.context["target_data"]["has_baseline"])
+        self.assertTrue(response.context["target_data"]["is_achieved"])
+        self.assertIn(
+            "Target minggu ini telah tercapai",
+            response.context["recommendations"][0],
+        )
+
+    def test_dashboard_reports_partial_and_negative_weekly_reduction(self):
+        self.create_week(13, 7, 10)
+        self.create_week(6, 1, 10)
+
+        TransportationSurvey.objects.create(
+            user=self.user,
+            transport_mode="motor_ice",
+            daily_distance_km=72.22,
+        )
+        partial_response = self.client.get(self.url)
+
+        self.assertAlmostEqual(
+            partial_response.context["target_data"]["actual_reduction_pct"],
+            5,
+        )
+        self.assertIn(
+            "Sedikit lagi!",
+            partial_response.context["recommendations"][0],
+        )
+
+        survey = TransportationSurvey.objects.get(user=self.user)
+        survey.daily_distance_km = 122.23
+        survey.save()
+        higher_emission_response = self.client.get(self.url)
+
+        self.assertLess(
+            higher_emission_response.context["target_data"]["actual_reduction_pct"],
+            0,
+        )
+        self.assertIn(
+            "Emisi masih lebih tinggi dari minggu lalu",
+            higher_emission_response.context["recommendations"][0],
+        )
+
+    def test_dashboard_recommends_actions_from_transport_energy_and_reusable_surveys(self):
+        TransportationSurvey.objects.create(
+            user=self.user,
+            transport_mode="car_ice",
+            daily_distance_km=1,
+        )
+        TransportationSurvey.objects.create(
+            user=self.user,
+            transport_mode="car_ice",
+            daily_distance_km=12,
+        )
+        TransportationSurvey.objects.create(
+            user=self.user,
+            transport_mode="motor_ice",
+            daily_distance_km=5,
+        )
+        ElectricitySurvey.objects.create(
+            user=self.user,
+            device_type="ac",
+            quantity=1,
+            power_watts=1000,
+            daily_usage_hours=8,
+        )
+        ElectricitySurvey.objects.create(
+            user=self.user,
+            device_type="desktop",
+            quantity=1,
+            power_watts=600,
+            daily_usage_hours=4,
+        )
+        ElectricitySurvey.objects.create(
+            user=self.user,
+            device_type="lamp",
+            quantity=3,
+            power_watts=10,
+            daily_usage_hours=5,
+        )
+        ElectricitySurvey.objects.create(
+            user=self.user,
+            device_type="television",
+            quantity=1,
+            power_watts=100,
+            daily_usage_hours=12,
+        )
+        ReusableItemSurvey.objects.create(
+            user=self.user,
+            item_type="botol_minum",
+            quantity=1,
+            uses_per_week=2,
+        )
+        ReusableItemSurvey.objects.create(
+            user=self.user,
+            item_type="tote_bag",
+            quantity=2,
+            uses_per_week=4,
+        )
+
+        response = self.client.get(self.url)
+        recommendations = response.context["recommendations"]
+
+        self.assertEqual(response.status_code, 200)
+        for expected_text in (
+            "tergolong dekat",
+            "menghasilkan emisi cukup tinggi",
+            "Motor bensin",
+            "Penggunaan AC",
+            "menggunakan daya besar",
+            "unit lampu",
+            "menyala selama 12 jam/hari",
+            "hanya 2 kali seminggu",
+            "Gunakan sesering mungkin",
+        ):
+            with self.subTest(recommendation=expected_text):
+                self.assertTrue(
+                    any(expected_text.lower() in item.lower() for item in recommendations),
+                    f"Recommendation containing {expected_text!r} was not generated.",
+                )
+
 
 class WeatherFlowTests(TestCase):
     def setUp(self):
@@ -343,11 +645,6 @@ class ElectricitySurveyTests(TestCase):
             'daily_usage_hours': '6',
             'notes': 'Untuk kuliah',
         }
-
-    def test_survey_page(self):
-        response = self.client.get(reverse('main:show_dashboard_survey'))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'id="electricityForm"')
 
     def test_emission_calculation(self):
         item = ElectricitySurvey.objects.create(

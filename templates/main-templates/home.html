@@ -13,7 +13,15 @@
                     rekomendasi pintar, dan bentuk kebiasaan hemat energi
                     bersama GassWatt
                 </p>
-                <a href="{% url 'show_register' %}"a class="btn-cta">Mulai Sekarang</a>
+                {% if user.is_authenticated %}
+                    {% if user.is_superuser %}
+                        <a href="{% url 'main:admin_dashboard' %}" class="btn-cta">Mulai Sekarang</a>
+                    {% else %}
+                        <a href="{% url 'main:show_dashboard' %}" class="btn-cta">Mulai Sekarang</a>
+                    {% endif %}
+                {% else %}
+                    <a href="{% url 'show_register' %}"a class="btn-cta">Mulai Sekarang</a>
+                {% endif %}
             </div>
 
             <div class="hero-visual">

@@ -768,7 +768,11 @@ def delete_location(request, location_id):
 
 @login_required
 def survey_reusable_list_json(request):
-    surveys = ReusableItemSurvey.objects.filter(user=request.user).order_by("-created_at")
+    item_type = request.GET.get("item_type", "").strip()
+    surveys = ReusableItemSurvey.objects.filter(user=request.user)
+    if item_type in dict(ReusableItemSurvey.ITEM_CHOICES):
+        surveys = surveys.filter(item_type=item_type)
+    surveys = surveys.order_by("-created_at")
     data = [
         {
             "id": str(item.id),

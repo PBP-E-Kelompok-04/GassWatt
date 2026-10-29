@@ -590,6 +590,25 @@
     display: none;
 }
 
+.reusable-filter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 24px 12px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #075c3e;
+}
+
+.reusable-filter select {
+    padding: 6px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    font: inherit;
+    font-weight: 600;
+    background: #f9fafb;
+}
+
 #reusablePanel .reusable-help {
     margin: 0 24px 12px;
     color: #527062;

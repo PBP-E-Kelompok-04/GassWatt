@@ -158,7 +158,15 @@
         <p class="reusable-help">
             Masukkan pemakaian barang reusable yang biasa kamu gunakan setiap hari.
         </p>
-
+        <div class="reusable-filter">
+            <label for="reusableFilter">Tampilkan:</label>
+            <select id="reusableFilter">
+                <option value="">Semua jenis</option>
+                {% for value, label in reusable_form.fields.item_type.choices %}
+                    <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
         <div class="transport-table-wrapper" id="reusableTableWrapper">
             <div id="reusableLoadingState" class="state-container hidden">
                 <div class="spinner"></div><p>Memuat data barang reusable...</p>

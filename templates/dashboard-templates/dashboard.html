@@ -17,13 +17,14 @@
         <div class="summary-metrics">
             <!-- Metric 1 -->
             <div class="metric-card">
-                <div class="metric-icon icon-zap">
-                    <img src="{% static 'img/lightning.png' %}" alt="lightning Icon" class="icon-img" />
-                </div>
-                <div class="metric-text">
-                    <span class="metric-label">Pemakaian hari ini</span>
-                    <div class="metric-value">4.8 kWh</div>
-                </div>
+
+            <div class="metric-icon icon-zap">
+                <img src="{% static 'img/lightning.png' %}" alt="lightning Icon" class="icon-img" />
+            </div>
+            <div class="metric-text">
+                <span class="metric-label">Pemakaian hari ini</span>
+                <div class="metric-value">{{ today_kwh|floatformat:2 }} kWh</div>
+            </div>
             </div>
 
             <!-- Metric 2 -->
@@ -67,10 +68,12 @@
                     <span class="chart-period">This week</span>
                 </div>
 
-                <!-- Container Chart untuk JS Canvas / SVG -->
-                <div class="chart-container" id="dailyEnergyChart">
-                    <!-- Area chart dikosongkan terlebih dahulu -->
-                </div>
+
+            <!-- Container Chart untuk JS Canvas / SVG -->
+            <div class="chart-container">
+                <!-- Area chart dikosongkan terlebih dahulu -->
+                 <canvas id="dailyEnergyChart"></canvas>
+            </div>
             </div>
 
             <!-- Recommendations Card -->
@@ -152,5 +155,54 @@
             }, 300)
         );
     }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const chartCanvas = document.getElementById('dailyEnergyChart');
+    if (!chartCanvas) return;
+
+    const ctx = chartCanvas.getContext('2d');
+
+    fetch("{% url 'main:daily_energy_chart_api' %}")
+        .then(res => {
+            if (!res.ok) throw new Error("Gagal mengambil data dari API");
+            return res.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Penggunaan Listrik (kWh)',
+                            data: data.datasets[0].data,
+                            backgroundColor: data.labels.map((_, index) =>
+                                index === data.labels.length - 1
+                                    ? '#A9D872'
+                                    : '#16895D'),
+                            borderRadius: 3,
+                            borderSkipped: false,
+                            maxBarThickness: 46
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true },
+                            x: {
+                                grid: { display: false },
+                                ticks: { autoSkip: true, maxRotation: 0 }
+                            }
+                        }
+                    }
+                });
+            }
+        })
+        .catch(err => console.error("Error Daily Energy Chart:", err));
+});
 </script>
 {% endblock %}

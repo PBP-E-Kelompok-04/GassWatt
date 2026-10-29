@@ -1,4 +1,4 @@
-{% extends 'homepage-base.html' %}
+{% extends 'main-templates/homepage-base.html' %}
 {% load static %}
 {% block title %}GassWatt - Home{% endblock title %}
 {% block content %}
@@ -13,7 +13,7 @@
                     rekomendasi pintar, dan bentuk kebiasaan hemat energi
                     bersama GassWatt
                 </p>
-                <a class="btn-cta">Mulai Sekarang</a>
+                <a href="{% url 'show_register' %}"a class="btn-cta">Mulai Sekarang</a>
             </div>
 
             <div class="hero-visual">

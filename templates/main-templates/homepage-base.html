@@ -1,0 +1,28 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}GassWatt{% endblock title %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    {% block meta %}{% endblock meta %}
+</head>
+<body class="{% block body_class %}{% endblock body_class %}">
+    {% include "main-templates/header.html" %}
+    {% block content %}{% endblock content %}
+    {% include "main-templates/footer.html" %}
+<script>
+    const siteHeader = document.querySelector(".site-header");
+    function updateHeader(){
+        siteHeader.classList.toggle("is-scrolled", window.scrollY>20)
+    }
+    window.addEventListener("scroll", updateHeader, { passive:true });
+    updateHeader();
+</script>
+</body>
+</html>

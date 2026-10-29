@@ -19,7 +19,7 @@
             <img src="{% static 'img/zap.png' %}" alt="gambar zap" class="summary-icon" id="zap">
             <div>
                 <p>Emisi Hari Ini</p>
-                <h2>{{ today_emission|floatformat:1 }} <small class="text-xs font-normal">kg CO₂e</small></h2>            
+                <h2>{{ today_emission|floatformat:2 }} <small class="text-xs font-normal">kg CO₂e</small></h2>            
             </div>
         </article>
 
@@ -28,7 +28,7 @@
             <img src="{% static 'img/leaf-trans.png' %}" alt="gambar leaf transparent" class="summary-icon">
             <div>
                 <p>Penghematan Minggu Ini</p>
-                <h2>{{ co2_saved|floatformat:1 }} <small class="text-xs font-normal">kg CO₂e</small></h2>
+                <h2>{{ co2_saved|floatformat:2 }} <small class="text-xs font-normal">kg CO₂e</small></h2>
             </div>
         </article>
 
@@ -46,7 +46,7 @@
             <img src="{% static 'img/Car.png' %}" alt="gambar Speedometer" class="summary-icon">
             <div>
                 <p>Emisi Transportasi</p>
-                <h2>{{ transport_emission_today|floatformat:1 }} kg CO₂e/hari</h2>
+                <h2>{{ transport_emission_today|floatformat:2 }} kg CO₂e/hari</h2>
             </div>
         </article>
 
@@ -55,7 +55,16 @@
             <img src="{% static 'img/Electricity.png' %}" alt="gambar Speedometer" class="summary-icon">
             <div>
                 <p>Emisi Perangkat Listrik</p>
-                <h2>{{ electricity_emission_today|floatformat:1 }} kg CO₂e/hari</h2>
+                <h2>{{ electricity_emission_today|floatformat:2 }} kg CO₂e/hari</h2>
+            </div>
+        </article>
+
+        <article class="summary-card">
+            <!-- <div class="summary-icon">◉</div> -->
+            <img src="{% static 'img/Clover.png' %}" alt="gambar Speedometer" class="summary-icon">
+            <div>
+                <p>Emisi Berhasil dihindari dari Barang Reusable</p>
+                <h2>{{ reusable_emission_saved_today|floatformat:2 }} kg CO₂e/hari</h2>
             </div>
         </article>
 

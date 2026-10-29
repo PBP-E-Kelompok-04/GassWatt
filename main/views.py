@@ -13,6 +13,8 @@ from django.contrib import messages
 
 from django.views.decorators.http import require_GET, require_POST
 
+from authentication.views import show_login, login_user, show_register, register_user
+
 from .models import (
     TransportationSurvey,
     ElectricitySurvey,
@@ -68,6 +70,7 @@ def get_weekly_target_summary(user, target_goal_pct=10.0):
 
 def show_dashboard(request):
     recommendations = []
+    today = timezone.now().date()
 
     target_weekly = get_weekly_target_summary(request.user)
 
@@ -126,10 +129,14 @@ def show_dashboard(request):
                 f"{label} menyala selama {hours} jam/hari. Mengurangi durasi pemakaian 1-2 jam sehari dapat menekan emisi harianmu."
             )
 
+    today_kwh = float(ElectricitySurvey.objects.filter(user=request.user, created_at__date=today)
+                                               .aggregate(total=Sum('daily_consumption_kwh'))['total'] or 0)
+
     # 4. Batasi maksimal 3 rekomendasi teratas agar dashboard tetap bersih
     context = {
         'target_data': target_weekly,
-        'recommendations': recommendations[:3]  
+        'recommendations': recommendations[:3],
+        'today_kwh': today_kwh
     }
     return render(request, "dashboard-templates/dashboard.html", context)
 
@@ -457,6 +464,35 @@ def emission_chart_api(request):
         ]
     })
 
+@login_required
+def daily_energy_chart_api(request):
+    user = request.user
+
+    today = timezone.now().date()
+    chart_dates = []
+    chart_values = []
+    day_names = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']
+
+    for i in range(6, -1, -1):
+        target_date = today - timedelta(days=i)
+        total = float(ElectricitySurvey.objects.filter(user=user, created_at__date=target_date)
+                                         .aggregate(total=Sum('daily_consumption_kwh'))['total'] or 0)
+        
+        label = f"{day_names[target_date.weekday()]} ({target_date.day})"
+        chart_dates.append(label)
+        chart_values.append(total)
+
+    return JsonResponse({
+        'status': 'success',
+        'labels': chart_dates,
+        'datasets': [
+            {
+                'label': 'Penggunaan Listrik Harian (kWh)',
+                'data': chart_values,
+            }
+        ]
+    })
+
 def show_faq(request):
     faq_list = FAQ.objects.filter(
         is_active=True
@@ -768,7 +804,11 @@ def delete_location(request, location_id):
 
 @login_required
 def survey_reusable_list_json(request):
-    surveys = ReusableItemSurvey.objects.filter(user=request.user).order_by("-created_at")
+    item_type = request.GET.get("item_type", "").strip()
+    surveys = ReusableItemSurvey.objects.filter(user=request.user)
+    if item_type in dict(ReusableItemSurvey.ITEM_CHOICES):
+        surveys = surveys.filter(item_type=item_type)
+    surveys = surveys.order_by("-created_at")
     data = [
         {
             "id": str(item.id),

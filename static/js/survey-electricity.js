@@ -334,5 +334,4 @@ if (transportTab) {
 }
 
 updateElectricityCustomField();
-selectElectricityTab(window.location.hash === '#electricity');
 fetchElectricitySurveys();

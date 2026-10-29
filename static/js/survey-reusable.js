@@ -14,6 +14,7 @@ const reusableEmptyState = document.getElementById('reusableEmptyState');
 const reusableTable = document.getElementById('reusableTable');
 const reusableTableBody = document.getElementById('reusableTableBody');
 const reusableTotalEmission = document.getElementById('reusableTotalEmission');
+const reusableFilter = document.getElementById('reusableFilter');
 
 const reusableModal = document.getElementById('reusableModal');
 const reusableDeleteModal = document.getElementById('reusableDeleteModal');
@@ -78,7 +79,11 @@ async function fetchReusableSurveys() {
     try {
         displayReusablePageSection({ showLoading: true });
 
-        const response = await fetch(BASE_REUSABLE_ENDPOINT, {
+        const params = new URLSearchParams();
+        if (reusableFilter && reusableFilter.value) params.set('item_type', reusableFilter.value);
+        const listUrl = params.toString() ? `${BASE_REUSABLE_ENDPOINT}?${params}` : BASE_REUSABLE_ENDPOINT;
+
+        const response = await fetch(listUrl, {
             headers: {
                 'Accept': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest'
@@ -274,6 +279,7 @@ if (reusableDeleteModal) {
     });
 }
 
+if (reusableFilter) reusableFilter.addEventListener('change', fetchReusableSurveys);
 const btnRetryReusable = document.getElementById('btnRetryReusable');
 if (btnRetryReusable) btnRetryReusable.addEventListener('click', fetchReusableSurveys);
 

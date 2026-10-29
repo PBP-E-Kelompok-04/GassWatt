@@ -75,6 +75,7 @@ def get_weekly_target_summary(user, target_goal_pct=10.0):
     }
 
 @login_required
+@require_GET
 def show_dashboard(request):
     recommendations = []
     today = timezone.now().date()
@@ -185,6 +186,7 @@ def show_dashboard(request):
     return render(request, "dashboard-templates/dashboard.html", context)
 
 @login_required
+@require_GET
 def show_dashboard_survey(request):
     return render(
         request,
@@ -239,6 +241,7 @@ def _sync_daily_emission_logs(user):
             start_date += timedelta(days=1)
 
 @login_required
+@require_GET
 def survey_transport_list_json(request):
     surveys = TransportationSurvey.objects.filter(
         user=request.user
@@ -393,6 +396,7 @@ def delete_electricity_survey(request, survey_id):
     return JsonResponse({'status': 'success', 'message': 'Perangkat berhasil dihapus.'})
 
 @login_required
+@require_GET
 def emission_dashboard(request):
     user = request.user
     

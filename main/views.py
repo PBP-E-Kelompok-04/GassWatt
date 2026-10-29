@@ -476,7 +476,10 @@ def daily_energy_chart_api(request):
     for i in range(6, -1, -1):
         target_date = today - timedelta(days=i)
         total = float(ElectricitySurvey.objects.filter(user=user, created_at__date=target_date)
-                                         .aggregate(total=Sum('daily_consumption_kwh'))['total'] or 0)
+                                               .aggregate(total=Sum('daily_consumption_kwh'))['total'] or 0)
+
+        if total == 0 and chart_values:
+            total = chart_values[-1]
         
         label = f"{day_names[target_date.weekday()]} ({target_date.day})"
         chart_dates.append(label)

@@ -70,6 +70,7 @@ def get_weekly_target_summary(user, target_goal_pct=10.0):
 
 def show_dashboard(request):
     recommendations = []
+    today = timezone.now().date()
 
     target_weekly = get_weekly_target_summary(request.user)
 
@@ -128,10 +129,14 @@ def show_dashboard(request):
                 f"{label} menyala selama {hours} jam/hari. Mengurangi durasi pemakaian 1-2 jam sehari dapat menekan emisi harianmu."
             )
 
+    today_kwh = float(ElectricitySurvey.objects.filter(user=request.user, created_at__date=today)
+                                               .aggregate(total=Sum('daily_consumption_kwh'))['total'] or 0)
+
     # 4. Batasi maksimal 3 rekomendasi teratas agar dashboard tetap bersih
     context = {
         'target_data': target_weekly,
-        'recommendations': recommendations[:3]  
+        'recommendations': recommendations[:3],
+        'today_kwh': today_kwh
     }
     return render(request, "dashboard-templates/dashboard.html", context)
 
@@ -454,6 +459,35 @@ def emission_chart_api(request):
         'datasets': [
             {
                 'label': 'Jejak Karbon (kg CO2e)',
+                'data': chart_values,
+            }
+        ]
+    })
+
+@login_required
+def daily_energy_chart_api(request):
+    user = request.user
+
+    today = timezone.now().date()
+    chart_dates = []
+    chart_values = []
+    day_names = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']
+
+    for i in range(6, -1, -1):
+        target_date = today - timedelta(days=i)
+        total = float(ElectricitySurvey.objects.filter(user=user, created_at__date=target_date)
+                                         .aggregate(total=Sum('daily_consumption_kwh'))['total'] or 0)
+        
+        label = f"{day_names[target_date.weekday()]} ({target_date.day})"
+        chart_dates.append(label)
+        chart_values.append(total)
+
+    return JsonResponse({
+        'status': 'success',
+        'labels': chart_dates,
+        'datasets': [
+            {
+                'label': 'Penggunaan Listrik Harian (kWh)',
                 'data': chart_values,
             }
         ]

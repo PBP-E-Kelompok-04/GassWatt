@@ -11,6 +11,7 @@ USER_DASHBOARD_URL = "main:show_dashboard"
 ADMIN_DASHBOARD_URL = "main:admin_dashboard"
 LOGIN_URL = "main:show_login"
 REGISTER_URL = "main:show_register"
+HOME_URL = "main:show_home"
 
 
 @require_GET
@@ -84,4 +85,4 @@ def register_user(request):
 def logout_user(request):
     logout(request)
     messages.success(request, "Anda telah logout.")
-    return redirect(LOGIN_URL)
+    return redirect(HOME_URL)

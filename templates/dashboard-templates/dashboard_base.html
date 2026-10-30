@@ -49,13 +49,13 @@
                     <input type="text" placeholder="Search" id="searchInput"/>
                 </div>
 
-                <div class="user-profile">
-                    <img src="" alt="Avatar" class="profile-avatar" />
+                <a href="{% url 'main:show_profile' %}" class="user-profile" style="text-decoration: none; color: inherit;">
+                    <img src="{{ request.user.pfp.url }}" alt="Avatar" class="profile-avatar" />
                     <div class="profile-info">
-                        <span class="user-name">Nama User</span>
+                        <span class="user-name">{{ request.user.username|default:request.user.email }}</span>
                         <span class="user-role">Dashboard</span>
                     </div>
-                </div>
+                </a>
             </header>
 
             {% block content %}{% endblock %}

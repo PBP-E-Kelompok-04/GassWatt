@@ -1,0 +1,91 @@
+{% extends 'dashboard_base.html' %}
+{% load static %}
+
+{% block meta %}
+<meta name="csrf-token" content="{{ csrf_token }}">
+<style>
+    .profile-page { position: relative; z-index: 1; display: grid; gap: 1.5rem; max-width: 720px; margin: 1.5rem auto; }
+    .profile-card { background: #fff; border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,.06); }
+    .profile-card h2 { margin: 0 0 1rem; font-size: 1.1rem; }
+
+    /* Avatar with hover overlay */
+    .avatar-wrapper { position: relative; width: 140px; height: 140px; margin: 0 auto 1rem; border-radius: 50%; overflow: hidden; cursor: pointer; }
+    .avatar-wrapper img { width: 100%; height: 100%; object-fit: cover; display: block; transition: filter .25s ease; }
+    .avatar-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center;
+        background: rgba(0,0,0,.45); color: #fff; font-size: .85rem; font-weight: 600; opacity: 0; transition: opacity .25s ease; }
+    .avatar-wrapper:hover .avatar-overlay,
+    .avatar-wrapper:focus-visible .avatar-overlay { opacity: 1; }
+    .avatar-wrapper:hover img { filter: blur(1px); }
+    .avatar-hint { text-align: center; font-size: .8rem; color: #777; margin: 0; }
+
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; margin-bottom: .35rem; font-size: .9rem; font-weight: 600; }
+    .form-group input { width: 100%; padding: .65rem .8rem; border: 1px solid #d5d9d7; border-radius: 10px; font-size: .95rem; box-sizing: border-box; }
+    .form-group input:focus { outline: 2px solid #2e9e6b; border-color: transparent; }
+    .field-hint { font-size: .75rem; color: #888; margin-top: .25rem; }
+
+    .btn-primary { background: #2e9e6b; color: #fff; border: 0; padding: .65rem 1.2rem; border-radius: 10px; font-weight: 600; cursor: pointer; }
+    .btn-primary:disabled { opacity: .6; cursor: not-allowed; }
+
+    .form-message { margin-top: .75rem; font-size: .85rem; display: none; }
+    .form-message.success { color: #1c7a4f; display: block; }
+    .form-message.error { color: #c0392b; display: block; }
+    .form-message ul { margin: 0; padding-left: 1.1rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="profile-page" id="profilePage">
+
+    <!-- Avatar -->
+    <div class="profile-card">
+        <h2>Profile Picture</h2>
+        <div class="avatar-wrapper" id="avatarWrapper" tabindex="0" role="button" aria-label="Ganti Foto Profil">
+            <img id="avatarPreview" src="{{ request.user.pfp.url }}" alt="Profile picture">
+            <div class="avatar-overlay">Change<br>photo</div>
+        </div>
+        <input type="file" id="avatarInput" accept="image/jpeg,image/png,image/webp" hidden>
+        <p class="avatar-hint">JPEG, PNG atau WEBP, max 2 MB. Akan di jadi persegi.</p>
+        <p class="form-message" id="avatarMessage" aria-live="polite"></p>
+    </div>
+
+    <!-- Username -->
+    <div class="profile-card">
+        <h2>Ganti Username</h2>
+        <form id="usernameForm" novalidate>
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" value="{{ request.user.username|default:'' }}"
+                       minlength="3" maxlength="20" pattern="[\w.@+\-]{3,20}" required autocomplete="username">
+                <div class="field-hint">3-20 karakter: huruf, angka dan @ . + - _ only.</div>
+            </div>
+            <button type="submit" class="btn-primary">Simpan username</button>
+            <div class="form-message" id="usernameMessage" aria-live="polite"></div>
+        </form>
+    </div>
+
+    <!-- Password -->
+    <div class="profile-card">
+        <h2>Ganti Password</h2>
+        <form id="passwordForm" novalidate>
+            <div class="form-group">
+                <label for="old_password">Password sekarang</label>
+                <input type="password" id="old_password" name="old_password" required autocomplete="current-password">
+            </div>
+            <div class="form-group">
+                <label for="new_password1">Password baru</label>
+                <input type="password" id="new_password1" name="new_password1" required autocomplete="new-password">
+            </div>
+            <div class="form-group">
+                <label for="new_password2">Konfirmasi password baru</label>
+                <input type="password" id="new_password2" name="new_password2" required autocomplete="new-password">
+            </div>
+            <button type="submit" class="btn-primary">Ganti password</button>
+            <div class="form-message" id="passwordMessage" aria-live="polite"></div>
+        </form>
+    </div>
+
+</section>
+
+<script src="{% static 'js/profile.js' %}" defer></script>
+{% endblock %}

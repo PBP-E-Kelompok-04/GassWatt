@@ -1,12 +1,17 @@
 from datetime import timedelta
 from unittest.mock import patch
 
-import requests, re
+import requests, re, json
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
-from django.test import TestCase, override_settings
+from django.test import TestCase, override_settings, RequestFactory
 from django.urls import reverse
 from django.utils import timezone
+from decimal import Decimal
+from django.contrib.messages.storage.fallback import FallbackStorage
+from django.core.exceptions import PermissionDenied
+from django.http import Http404, HttpResponse
+
 
 from ..models.model_survey import (
     TransportationSurvey,
@@ -16,7 +21,7 @@ from ..models.model_survey import (
     DailyEmissionLog,
     FAQ,
 )
-from ..views import get_weekly_target_summary
+from ..views import get_weekly_target_summary, view_admin
 
 from .. import weather_logic
 from ..forms import LocationForm, LocationRenameForm, ElectricitySurveyForm
@@ -1055,3 +1060,607 @@ class PublicFeaturesTests(TestCase):
             {"question": "Baru", "answer": "Isi"}
         )
         self.assertEqual(FAQ.objects.count(), 2)
+
+
+
+
+
+
+class AdminViewsTestCase(TestCase):
+
+    def setUp(self):
+        self.factory = RequestFactory()
+
+        self.admin = User.objects.create_user(
+            username="admin",
+            email="admin@test.com",
+            password="password123",
+            first_name="Admin",
+            last_name="GassWatt",
+            is_staff=True,
+        )
+
+        self.user = User.objects.create_user(
+            username="user1",
+            email="user@test.com",
+            password="password123",
+            first_name="User",
+            last_name="Biasa",
+        )
+
+    def make_request(self, method, path="/", user=None, data=None):
+        user = user or self.admin
+
+        if method == "GET":
+            request = self.factory.get(path)
+        elif method == "POST":
+            request = self.factory.post(path, data=data or {})
+        else:
+            raise ValueError("Method tidak didukung")
+
+        request.user = user
+
+        request.session = {}
+        request._messages = FallbackStorage(request)
+
+        return request
+
+    @patch("main.views.view_admin.render")
+    def test_admin_dashboard_success(self, mock_render):
+        mock_render.return_value = HttpResponse("Dashboard")
+
+        TransportationSurvey.objects.create(
+            user=self.user,
+            transport_mode="motor_ice",
+            daily_distance_km=Decimal("10"),
+        )
+
+        ElectricitySurvey.objects.create(
+            user=self.user,
+            device_type="lamp",
+            quantity=1,
+            power_watts=Decimal("100"),
+            daily_usage_hours=2,
+        )
+
+        ReusableItemSurvey.objects.create(
+            user=self.user,
+            item_type="botol_minum",
+            quantity=1,
+            uses_per_week=7,
+        )
+
+        SavedLocation.objects.create(
+            user=self.user,
+            name="Jakarta",
+            latitude=-6.2,
+            longitude=106.8,
+        )
+
+        response = view_admin.admin_dashboard(
+            self.make_request("GET")
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        context = mock_render.call_args[0][2]
+
+        self.assertEqual(context["admin_name"], "Admin GassWatt")
+        self.assertEqual(context["total_users"], 2)
+        self.assertEqual(context["total_lokasi"], 1)
+
+        self.assertAlmostEqual(
+            context["total_emisi"], 1.05, places=2
+        )
+
+        self.assertEqual(context["total_aktivitas_today"], 4)
+
+        self.assertEqual(
+            context["emisi_transport"], Decimal("0.90")
+        )
+
+        self.assertEqual(
+            context["emisi_listrik"], Decimal("0.143")
+        )
+
+        self.assertEqual(
+            context["emisi_reusable"], Decimal("0.010")
+        )
+
+        monthly_labels = json.loads(
+            context["monthly_labels_json"]
+        )
+        monthly_users = json.loads(
+            context["monthly_users_json"]
+        )
+        daily_labels = json.loads(
+            context["daily_labels_json"]
+        )
+        daily_activities = json.loads(
+            context["daily_activities_json"]
+        )
+
+        self.assertEqual(len(monthly_labels), 12)
+        self.assertEqual(len(monthly_users), 12)
+        self.assertEqual(len(daily_labels), 7)
+        self.assertEqual(len(daily_activities), 7)
+
+        self.assertEqual(
+            daily_activities[-1], 4
+        )
+
+        self.assertEqual(
+            mock_render.call_args[0][1],
+            "admin-templates/admin-dashboard.html",
+        )
+
+    @patch("main.views.view_admin.render")
+    def test_admin_dashboard_empty_emissions(self, mock_render):
+        mock_render.return_value = HttpResponse("Dashboard")
+
+        response = view_admin.admin_dashboard(
+            self.make_request("GET")
+        )
+
+        context = mock_render.call_args[0][2]
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(context["total_emisi"], 0.0)
+        self.assertEqual(context["total_aktivitas_today"], 0)
+        self.assertEqual(context["total_lokasi"], 0)
+
+    @patch("main.views.view_admin.render")
+    def test_admin_dashboard_admin_without_full_name(self, mock_render):
+        mock_render.return_value = HttpResponse("Dashboard")
+
+        self.admin.first_name = ""
+        self.admin.last_name = ""
+        self.admin.save()
+
+        view_admin.admin_dashboard(
+            self.make_request("GET")
+        )
+
+        context = mock_render.call_args[0][2]
+
+        self.assertEqual(context["admin_name"], "admin")
+
+    def test_admin_dashboard_requires_admin(self):
+        request = self.make_request("GET", user=self.user)
+
+        with self.assertRaises(PermissionDenied):
+            view_admin.admin_dashboard(request)
+
+    @patch("main.views.view_admin.render")
+    def test_kelola_pengguna_success(self, mock_render):
+        mock_render.return_value = HttpResponse("Users")
+
+        TransportationSurvey.objects.create(
+            user=self.user,
+            transport_mode="motor_ice",
+            daily_distance_km=Decimal("10"),
+        )
+
+        ElectricitySurvey.objects.create(
+            user=self.user,
+            device_type="lamp",
+            power_watts=Decimal("100"),
+            daily_usage_hours=2,
+        )
+
+        ReusableItemSurvey.objects.create(
+            user=self.user,
+            item_type="botol_minum",
+            quantity=1,
+            uses_per_week=7,
+        )
+
+        response = view_admin.kelola_pengguna(
+            self.make_request("GET")
+        )
+
+        context = mock_render.call_args[0][2]
+        users = context["users"]
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(context["total_count"], 2)
+        self.assertEqual(len(users), 2)
+
+        admin_data = next(
+            u for u in users if u["id"] == self.admin.id
+        )
+
+        user_data = next(
+            u for u in users if u["id"] == self.user.id
+        )
+
+        self.assertEqual(admin_data["nama"], "Admin GassWatt")
+        self.assertEqual(admin_data["role"], "Admin")
+        self.assertEqual(admin_data["status"], "Aktif")
+        self.assertTrue(admin_data["is_self"])
+
+        self.assertEqual(user_data["nama"], "User Biasa")
+        self.assertEqual(user_data["role"], "Pengguna")
+        self.assertEqual(user_data["status"], "Aktif")
+        self.assertFalse(user_data["is_self"])
+
+        self.assertAlmostEqual(
+            user_data["total_emisi"], 1.05, places=1
+        )
+
+    @patch("main.views.view_admin.render")
+    def test_kelola_pengguna_inactive_and_missing_email(self, mock_render):
+        mock_render.return_value = HttpResponse("Users")
+
+        self.user.is_active = False
+        self.user.email = ""
+        self.user.save()
+
+        view_admin.kelola_pengguna(
+            self.make_request("GET")
+        )
+
+        users = mock_render.call_args[0][2]["users"]
+
+        user_data = next(
+            u for u in users if u["id"] == self.user.id
+        )
+
+        self.assertEqual(user_data["email"], "-")
+        self.assertEqual(user_data["status"], "Inaktif")
+
+    @patch("main.views.view_admin.render")
+    def test_kelola_pengguna_superuser_role(self, mock_render):
+        mock_render.return_value = HttpResponse("Users")
+
+        self.admin.is_staff = False
+        self.admin.is_superuser = True
+        self.admin.save()
+
+        view_admin.kelola_pengguna(
+            self.make_request("GET")
+        )
+
+        users = mock_render.call_args[0][2]["users"]
+
+        admin_data = next(
+            u for u in users if u["id"] == self.admin.id
+        )
+
+        self.assertEqual(admin_data["role"], "Admin")
+
+    def test_delete_user_success(self):
+        user_id = self.user.id
+
+        request = self.make_request("POST")
+
+        response = view_admin.delete_user(
+            request, user_id=user_id
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        data = json.loads(response.content)
+
+        self.assertEqual(data["status"], "success")
+        self.assertFalse(
+            User.objects.filter(id=user_id).exists()
+        )
+
+    def test_delete_user_cannot_delete_self(self):
+        request = self.make_request("POST")
+
+        response = view_admin.delete_user(
+            request, user_id=self.admin.id
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+        data = json.loads(response.content)
+
+        self.assertEqual(data["status"], "error")
+        self.assertTrue(
+            User.objects.filter(id=self.admin.id).exists()
+        )
+
+    def test_delete_user_not_found(self):
+        request = self.make_request("POST")
+
+        response = view_admin.delete_user(
+            request, user_id=999999
+        )
+
+        self.assertEqual(response.status_code, 404)
+
+        data = json.loads(response.content)
+
+        self.assertEqual(data["status"], "error")
+        self.assertEqual(
+            data["message"], "Pengguna tidak ditemukan."
+        )
+
+    def test_delete_user_denied_for_regular_user(self):
+        request = self.make_request("POST", user=self.user)
+
+        response = view_admin.delete_user(
+            request, user_id=self.admin.id
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+        data = json.loads(response.content)
+
+        self.assertEqual(data["status"], "error")
+        self.assertEqual(data["message"], "Akses ditolak.")
+
+        self.assertTrue(
+            User.objects.filter(id=self.admin.id).exists()
+        )
+
+
+    @patch("main.views.view_admin.render")
+    def test_kelola_faq_success(self, mock_render):
+        mock_render.return_value = HttpResponse("FAQ")
+
+        faq1 = FAQ.objects.create(
+            question="Apa itu GassWatt?",
+            answer="Platform ramah lingkungan.",
+            order=2,
+        )
+
+        faq2 = FAQ.objects.create(
+            question="Bagaimana cara menghitung emisi?",
+            answer="Menggunakan data aktivitas.",
+            order=1,
+        )
+
+        response = view_admin.kelola_faq(
+            self.make_request("GET")
+        )
+
+        context = mock_render.call_args[0][2]
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(context["admin_name"], "Admin GassWatt")
+
+        self.assertEqual(
+            list(context["faq_list"]),
+            [faq2, faq1],
+        )
+
+    @patch("main.views.view_admin.render")
+    def test_kelola_faq_admin_without_full_name(self, mock_render):
+        mock_render.return_value = HttpResponse("FAQ")
+
+        self.admin.first_name = ""
+        self.admin.last_name = ""
+        self.admin.save()
+
+        view_admin.kelola_faq(
+            self.make_request("GET")
+        )
+
+        context = mock_render.call_args[0][2]
+
+        self.assertEqual(context["admin_name"], "admin")
+
+
+    @patch("main.views.view_admin.redirect")
+    def test_add_faq_success(self, mock_redirect):
+        mock_redirect.return_value = HttpResponse(status=302)
+
+        response = view_admin.add_faq(
+            self.make_request(
+                "POST",
+                data={
+                    "question": " Apa itu GassWatt? ",
+                    "answer": " Platform pengelolaan emisi. ",
+                },
+            )
+        )
+
+        self.assertEqual(response.status_code, 302)
+
+        faq = FAQ.objects.get()
+
+        self.assertEqual(faq.question, "Apa itu GassWatt?")
+        self.assertEqual(faq.answer, "Platform pengelolaan emisi.")
+        self.assertEqual(faq.order, 1)
+        self.assertTrue(faq.is_active)
+
+    @patch("main.views.view_admin.redirect")
+    def test_add_faq_auto_increment_order(self, mock_redirect):
+        mock_redirect.return_value = HttpResponse(status=302)
+
+        FAQ.objects.create(
+            question="FAQ lama",
+            answer="Jawaban lama",
+            order=5,
+        )
+
+        view_admin.add_faq(
+            self.make_request(
+                "POST",
+                data={
+                    "question": "FAQ baru",
+                    "answer": "Jawaban baru",
+                },
+            )
+        )
+
+        faq = FAQ.objects.get(question="FAQ baru")
+        self.assertEqual(faq.order, 6)
+
+    @patch("main.views.view_admin.redirect")
+    def test_add_faq_invalid_empty_question(self, mock_redirect):
+        mock_redirect.return_value = HttpResponse(status=302)
+        response = view_admin.add_faq(
+            self.make_request(
+                "POST",
+                data={
+                    "question": " ",
+                    "answer": "Jawaban",
+                },
+            )
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(FAQ.objects.count(), 0)
+
+    @patch("main.views.view_admin.redirect")
+    def test_add_faq_invalid_empty_answer(self, mock_redirect):
+        mock_redirect.return_value = HttpResponse(status=302)
+        response = view_admin.add_faq(
+            self.make_request(
+                "POST",
+                data={
+                    "question": "Pertanyaan",
+                    "answer": " ",
+                },
+            )
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(FAQ.objects.count(), 0)
+
+
+    @patch("main.views.view_admin.redirect")
+    def test_edit_faq_success(self, mock_redirect):
+        mock_redirect.return_value = HttpResponse(status=302)
+
+        faq = FAQ.objects.create(
+            question="Pertanyaan lama",
+            answer="Jawaban lama",
+            order=1,
+        )
+        response = view_admin.edit_faq(
+            self.make_request(
+                "POST",
+                data={
+                    "question": "Pertanyaan baru",
+                    "answer": "Jawaban baru",
+                },
+            ),
+            faq_id=faq.id,
+        )
+        self.assertEqual(response.status_code, 302)
+        faq.refresh_from_db()
+        self.assertEqual(faq.question, "Pertanyaan baru")
+        self.assertEqual(faq.answer, "Jawaban baru")
+        self.assertEqual(faq.order, 1)
+
+    @patch("main.views.view_admin.redirect")
+    def test_edit_faq_invalid_question(self, mock_redirect):
+        mock_redirect.return_value = HttpResponse(status=302)
+        faq = FAQ.objects.create(
+            question="Pertanyaan lama",
+            answer="Jawaban lama",
+        )
+        view_admin.edit_faq(
+            self.make_request(
+                "POST",
+                data={
+                    "question": "",
+                    "answer": "Jawaban baru",
+                },
+            ),
+            faq_id=faq.id,
+        )
+        faq.refresh_from_db()
+        self.assertEqual(faq.question, "Pertanyaan lama")
+        self.assertEqual(faq.answer, "Jawaban lama")
+
+    @patch("main.views.view_admin.redirect")
+    def test_edit_faq_invalid_answer(self, mock_redirect):
+        mock_redirect.return_value = HttpResponse(status=302)
+        faq = FAQ.objects.create(
+            question="Pertanyaan lama",
+            answer="Jawaban lama",
+        )
+        view_admin.edit_faq(
+            self.make_request(
+                "POST",
+                data={
+                    "question": "Pertanyaan baru",
+                    "answer": " ",
+                },
+            ),
+            faq_id=faq.id,
+        )
+        faq.refresh_from_db()
+        self.assertEqual(faq.question, "Pertanyaan lama")
+        self.assertEqual(faq.answer, "Jawaban lama")
+
+    def test_edit_faq_not_found(self):
+        request = self.make_request(
+            "POST",
+            data={
+                "question": "Pertanyaan",
+                "answer": "Jawaban",
+            },
+        )
+        with self.assertRaises(Http404):
+            view_admin.edit_faq(
+                request, faq_id=999999
+            )
+
+    @patch("main.views.view_admin.redirect")
+    def test_delete_faq_success(self, mock_redirect):
+        mock_redirect.return_value = HttpResponse(status=302)
+        faq = FAQ.objects.create(
+            question="FAQ yang akan dihapus",
+            answer="Jawaban",
+        )
+        faq_id = faq.id
+        response = view_admin.delete_faq(
+            self.make_request("POST"),
+            faq_id=faq_id,
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(
+            FAQ.objects.filter(id=faq_id).exists()
+        )
+
+    def test_delete_faq_not_found(self):
+        request = self.make_request("POST")
+        with self.assertRaises(Http404):
+            view_admin.delete_faq(
+                request, faq_id=999999
+            )
+
+    def test_admin_dashboard_only_accepts_get(self):
+        request = self.make_request("POST")
+        response = view_admin.admin_dashboard(request)
+        self.assertEqual(response.status_code, 405)
+
+    def test_delete_user_only_accepts_post(self):
+        request = self.make_request("GET")
+        response = view_admin.delete_user(
+            request, user_id=self.user.id
+        )
+        self.assertEqual(response.status_code, 405)
+
+    def test_add_faq_only_accepts_post(self):
+        request = self.make_request("GET")
+        response = view_admin.add_faq(request)
+        self.assertEqual(response.status_code, 405)
+
+    def test_edit_faq_only_accepts_post(self):
+        faq = FAQ.objects.create(
+            question="Pertanyaan",
+            answer="Jawaban",
+        )
+        request = self.make_request("GET")
+        response = view_admin.edit_faq(
+            request, faq_id=faq.id
+        )
+        self.assertEqual(response.status_code, 405)
+
+    def test_delete_faq_only_accepts_post(self):
+        faq = FAQ.objects.create(
+            question="Pertanyaan",
+            answer="Jawaban",
+        )
+        request = self.make_request("GET")
+        response = view_admin.delete_faq(
+            request, faq_id=faq.id
+        )
+        self.assertEqual(response.status_code, 405)

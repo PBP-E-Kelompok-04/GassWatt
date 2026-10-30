@@ -6,48 +6,53 @@
 <main>
     <section id="register">
         <div class="container">
-            <h1>Create Account</h1>
+            <div class="auth-card">
+                <h1 class="section-title"><span>Daftar Akun</span></h1>
+                <p class="auth-subtitle">Gabung bersama GasWatt dan hitung jejak karbonmu!</p>
 
-            {% if messages %}
-                <ul>
-                    {% for message in messages %}
-                        <li>{{ message }}</li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
+                {% if messages %}
+                    <ul>
+                        {% for message in messages %}
+                            <li>{{ message }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
 
-            <form data-auth-form novalidate method="post"
-                  data-validate-url="{% url 'main:validate_field' %}"
-                  action="{% url 'main:register_user' %}">
-                {% csrf_token %}
+                <form data-auth-form novalidate method="post"
+                      data-validate-url="{% url 'main:validate_field' %}"
+                      action="{% url 'main:register_user' %}">
+                    {% csrf_token %}
 
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" autocomplete="username"
-                       maxlength="20" required data-validate aria-describedby="username-error">
-                <div id="username-error" class="field-error" data-error-for="username" role="alert" hidden></div>
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" autocomplete="username"
+                           autocapitalize="none" spellcheck="false"
+                           maxlength="20" required data-validate aria-describedby="username-error">
+                    <div id="username-error" class="field-error" data-error-for="username" role="alert" hidden></div>
 
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" autocomplete="email"
-                       required data-validate aria-describedby="email-error">
-                <div id="email-error" class="field-error" data-error-for="email" role="alert" hidden></div>
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" autocomplete="email"
+                           autocapitalize="none" spellcheck="false"
+                           required data-validate aria-describedby="email-error">
+                    <div id="email-error" class="field-error" data-error-for="email" role="alert" hidden></div>
 
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" autocomplete="new-password"
-                       maxlength="20" required data-validate aria-describedby="password-error">
-                <div id="password-error" class="field-error" data-error-for="password" role="alert" hidden></div>
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" autocomplete="new-password"
+                           maxlength="20" required data-validate aria-describedby="password-error">
+                    <div id="password-error" class="field-error" data-error-for="password" role="alert" hidden></div>
 
-                <label for="confirm_password">Confirm password</label>
-                <input type="password" id="confirm_password" name="confirm_password" autocomplete="new-password"
-                       maxlength="20" required data-validate aria-describedby="confirm_password-error">
-                <div id="confirm_password-error" class="field-error" data-error-for="confirm_password" role="alert" hidden></div>
+                    <label for="confirm_password">Konfirmasi password</label>
+                    <input type="password" id="confirm_password" name="confirm_password" autocomplete="new-password"
+                           maxlength="20" required data-validate aria-describedby="confirm_password-error">
+                    <div id="confirm_password-error" class="field-error" data-error-for="confirm_password" role="alert" hidden></div>
 
-                <div class="field-error" data-error-for="__all__" role="alert" hidden></div>
-                <div class="form-success" data-success role="status" hidden></div>
+                    <div class="field-error" data-error-for="__all__" role="alert" hidden></div>
+                    <div class="form-success" data-success role="status" hidden></div>
 
-                <button type="submit">Create account</button>
-            </form>
+                    <button type="submit" class="btn-cta auth-submit">Buat Akun</button>
+                </form>
 
-            <p>Already have an account? <a href="{% url 'main:show_login' %}">Log in</a></p>
+                <p class="auth-switch">Sudah mempunyai akun? <a href="{% url 'main:show_login' %}">Masuk</a></p>
+            </div>
         </div>
     </section>
 </main>

@@ -1,4 +1,7 @@
 from django.urls import path
+from django.conf import settings
+from django.conf.urls.static import static
+
 
 from . import views
 
@@ -62,5 +65,12 @@ urlpatterns = [
     path("admin-portal/faq/", views.kelola_faq, name="kelola_faq"),
     path("admin-portal/faq/add/", views.add_faq, name="add_faq"),
     path("admin-portal/<int:faq_id>/edit/", views.edit_faq, name="edit_faq"),
+    path("admin-portal/<int:faq_id>/delete/", views.delete_faq, name="delete_faq"),
+
+    # Profile
+    path("profile/", views.show_profile, name="show_profile"),
+    path("profile/username/", views.update_username, name="update_username"),
+    path("profile/avatar/", views.update_avatar, name="update_avatar"),
+    path("profile/password/", views.change_password, name="change_password"),
     path("admin-portal/faq/<int:faq_id>/delete/", views.delete_faq, name="delete_faq"),
 ]

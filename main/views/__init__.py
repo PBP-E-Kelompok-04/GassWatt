@@ -56,3 +56,9 @@ from .view_admin import (
 from .view_decorators import (
     _is_admin,
 )
+from .view_profile import (
+    show_profile,
+    update_username,
+    update_avatar,
+    change_password,
+)

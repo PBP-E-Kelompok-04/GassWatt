@@ -63,4 +63,10 @@ urlpatterns = [
     path("admin-portal/faq/add/", views.add_faq, name="add_faq"),
     path("admin-portal/<int:faq_id>/edit/", views.edit_faq, name="edit_faq"),
     path("admin-portal/<int:faq_id>/delete/", views.delete_faq, name="delete_faq"),
+
+    # Profile
+    path("profile/", views.show_profile, name="show_profile"),
+    path("profile/username/", views.update_username, name="update_username"),
+    path("profile/avatar/", views.update_avatar, name="update_avatar"),
+    path("profile/password/", views.change_password, name="change_password"),
 ]

@@ -19,24 +19,50 @@
                 </a>
             </div>
 
+            {% if request.user.is_superuser or request.user.is_staff %}
+
+            <nav class="sidebar-nav">
+                <a href="{% url 'main:admin_dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
+                    <img src="{% static 'img/layout_dashboard.png' %}" alt="Dashboard">
+                    <span>Dashboard Admin</span>
+                </a>
+
+                <a href="{% url 'main:kelola_pengguna' %}" class="nav-item {% if request.resolver_match.url_name == 'kelola_pengguna' %}active{% endif %}">
+                    <img src="{% static 'img/users_dashboard.png' %}" alt="Pengguna">
+                    <span>Kelola Pengguna</span>
+                </a>
+
+                <a href="{% url 'main:kelola_faq' %}" class="nav-item {% if request.resolver_match.url_name == 'kelola_faq' %}active{% endif %}">
+                    <img src="{% static 'img/faq_dashboard.png' %}" alt="FAQ">
+                    <span>Kelola FAQ</span>
+                </a>
+            </nav>
+
+            {% else %}
+
             <nav class="sidebar-nav">
                 <a href="{% url 'main:show_dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'show_dashboard' %}active{% endif %}">
-                    <img src="{% static 'img/layout_dashboard.png' %}" alt="Dashboard" class="nav-icon" />
+                    <img src="{% static 'img/layout_dashboard.png' %}" alt="Dashboard" class="nav-icon">
                     <span>Dashboard</span>
                 </a>
+
                 <a href="{% url 'main:show_dashboard_survey' %}" class="nav-item {% if request.resolver_match.url_name == 'show_dashboard_survey' %}active{% endif %}">
-                    <img src="{% static 'img/survey.png' %}" alt="Survey" class="nav-icon" />
+                    <img src="{% static 'img/survey.png' %}" alt="Survey" class="nav-icon">
                     <span>Survey</span>
                 </a>
+
                 <a href="{% url 'main:show_dashboard_weather' %}" class="nav-item {% if request.resolver_match.url_name == 'show_dashboard_weather' %}active{% endif %}">
-                    <img src="{% static 'img/cloud-sun.png' %}" alt="Weather" class="nav-icon" />
+                    <img src="{% static 'img/cloud-sun.png' %}" alt="Weather" class="nav-icon">
                     <span>Weather</span>
                 </a>
+
                 <a href="{% url 'main:emission_dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'emission_dashboard' %}active{% endif %}">
-                    <img src="{% static 'img/leaf.png' %}" alt="Emission" class="nav-icon" />
+                    <img src="{% static 'img/leaf.png' %}" alt="Emission" class="nav-icon">
                     <span>Emission</span>
                 </a>
             </nav>
+
+            {% endif %}
         </aside>
 
         <main class="main-content">
@@ -50,7 +76,10 @@
                 </div>
 
                 <a href="{% url 'main:show_profile' %}" class="user-profile" style="text-decoration: none; color: inherit;">
-                    <img src="{{ request.user.pfp.url }}" alt="Avatar" class="profile-avatar" />
+                    <img src="{{ request.user.pfp.url }}"
+                        class="profile-avatar"
+                        alt="Avatar"
+                        onerror="this.onerror=null; this.src='{% get_media_prefix %}default.jpg';">
                     <div class="profile-info">
                         <span class="user-name">{{ request.user.username|default:request.user.email }}</span>
                         <span class="user-role">Dashboard</span>

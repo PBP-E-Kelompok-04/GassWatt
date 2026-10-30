@@ -38,7 +38,7 @@ def _flatten_to_rgb(img):
 
 @login_required
 def show_profile(request):
-    return render(request, "profile.html")
+    return render(request, "dashboard-templates/profile.html")
 
 
 @login_required
@@ -48,18 +48,18 @@ def update_username(request):
 
     if not (USERNAME_MIN <= len(username) <= USERNAME_MAX):
         return JsonResponse(
-            {"ok": False, "error": f"Username must be {USERNAME_MIN}-{USERNAME_MAX} characters."},
+            {"ok": False, "error": f"Username harus berjumlah {USERNAME_MIN}-{USERNAME_MAX} karakter."},
             status=400,
         )
     try:
         ASCIIUsernameValidator()(username)
     except ValidationError:
         return JsonResponse(
-            {"ok": False, "error": "Only letters, numbers and @ . + - _ are allowed."},
+            {"ok": False, "error": "Hanya huruf, angka and @ . + - _ diperbolehkan."},
             status=400,
         )
     if User.objects.filter(username__iexact=username).exclude(pk=request.user.pk).exists():
-        return JsonResponse({"ok": False, "error": "That username is already taken."}, status=400)
+        return JsonResponse({"ok": False, "error": "Username sudah diambil."}, status=400)
 
     request.user.username = username
     try:
@@ -68,8 +68,8 @@ def update_username(request):
             request.user.save(update_fields=["username"])
     except IntegrityError:
         # Lost a race with another request that grabbed the same name.
-        return JsonResponse({"ok": False, "error": "That username is already taken."}, status=400)
-    return JsonResponse({"ok": True, "username": username, "message": "Username updated."})
+        return JsonResponse({"ok": False, "error": "Username sudah diambil."}, status=400)
+    return JsonResponse({"ok": True, "username": username, "message": "Username berhasil diubah."})
 
 
 @login_required
@@ -79,7 +79,7 @@ def update_avatar(request):
     if not file:
         return JsonResponse({"ok": False, "error": "No file uploaded."}, status=400)
     if file.size > MAX_AVATAR_BYTES:
-        return JsonResponse({"ok": False, "error": "Image must be 2 MB or smaller."}, status=400)
+        return JsonResponse({"ok": False, "error": "Gambar maksimal 2 MB."}, status=400)
 
     try:
         img = Image.open(file)
@@ -88,14 +88,14 @@ def update_avatar(request):
         img = Image.open(file)                      # must reopen after verify()
         if img.format not in ALLOWED_FORMATS:
             return JsonResponse(
-                {"ok": False, "error": "Only JPEG, PNG or WEBP images are allowed."}, status=400
+                {"ok": False, "error": "Hanya gambar JPEG, PNG atau WEBP diperbolehkan."}, status=400
             )
 
         img = ImageOps.exif_transpose(img) # fix phone rotation
         img = _flatten_to_rgb(img)
         img = ImageOps.fit(img, (AVATAR_SIZE, AVATAR_SIZE), Image.LANCZOS) # center-crop square
     except Exception:
-        return JsonResponse({"ok": False, "error": "Invalid or corrupted image."}, status=400)
+        return JsonResponse({"ok": False, "error": "Gambar invalid atau rusak."}, status=400)
 
     buffer = BytesIO()
     img.save(buffer, format="JPEG", quality=85, optimize=True)
@@ -112,7 +112,7 @@ def update_avatar(request):
         user.pfp.storage.delete(old_name)
 
     url = f"{user.pfp.url}?v={int(timezone.now().timestamp())}" # cache-bust
-    return JsonResponse({"ok": True, "url": url, "message": "Profile picture updated."})
+    return JsonResponse({"ok": True, "url": url, "message": "Foto profil berhasil diubah."})
 
 
 @login_required
@@ -128,7 +128,7 @@ def change_password(request):
         return JsonResponse({"ok": False, "errors": ["New passwords do not match."]}, status=400)
     if new1 == old:
         return JsonResponse(
-            {"ok": False, "errors": ["New password must be different from the current one."]},
+            {"ok": False, "errors": ["Password baru harus berbeda dengan password lama."]},
             status=400,
         )
 
@@ -140,4 +140,4 @@ def change_password(request):
     request.user.set_password(new1)
     request.user.save(update_fields=["password"])
     update_session_auth_hash(request, request.user)   # keeps the user logged in
-    return JsonResponse({"ok": True, "message": "Password changed successfully."})
+    return JsonResponse({"ok": True, "message": "Password berhasil diubah."})

@@ -25,8 +25,10 @@
         <!-- SIDEBAR -->
         <aside class="sidebar">
             <div class="brand">
-                <img src="{% static 'img/logo.png' %}" alt="Logo" class="brand-logo">
-                <span class="brand-name">GassWatt</span>
+                <a href="{% url 'main:show_home' %}" class="brand">
+                    <img src="{% static 'img/logo.png' %}" alt="Logo" class="brand-logo">
+                    <span class="brand-name">GassWatt</span>
+                </a>
             </div>
 
             <nav class="sidebar-nav">
@@ -53,17 +55,16 @@
                     <h2>Manajemen Pengguna</h2>
                 </div>
 
-                <div class="user-profile">
-                    {% static 'img/87346.png' as default_avatar %}
-                    <img src="{% static 'img/87346.png' %}" 
-                        alt="Avatar" 
-                        class="profile-avatar" 
-                        onerror="this.onerror=null; this.src='{{ default_avatar }}';">
+                <a href="{% url 'main:show_profile' %}" class="user-profile" style="text-decoration: none; color: inherit;">
+                    <img src="{{ request.user.pfp.url }}"
+                        class="profile-avatar"
+                        alt="Avatar"
+                        onerror="this.onerror=null; this.src='{% get_media_prefix %}default.jpg';">
                     <div class="profile-info">
-                        <span class="user-name">{{ admin_name|default:"Sofie Daniella Ang" }}</span>
-                        <span class="user-role">Administrator</span>
+                        <span class="user-name">{{ request.user.username|default:request.user.email }}</span>
+                        <span class="user-role-badge">Administrator</span>
                     </div>
-                </div>
+                </a>
             </header>
 
             

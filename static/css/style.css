@@ -404,7 +404,9 @@ a {
 .header-actions {
     display: flex;
     align-items: center;
-    gap: 6px;
+    justify-content: flex-end;
+    gap: 10px;
+    min-width: 220;
 }
 
 .language,
@@ -413,7 +415,6 @@ a {
     font-size: 15px;
     color: #5b7d6c;
 }
-
 /* ---------- FOOTER ---------- */
 .site-footer {
     padding: 20px 0 28px;

@@ -1,48 +1,35 @@
 from datetime import timedelta
-import math, json
+import math
 
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError, transaction
 from django.db.models import Sum, Count
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, render, redirect
+from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_POST
 from django.utils import timezone
-from django.contrib.auth.models import User
-
-
-from django.contrib import messages
 
 from django.views.decorators.http import require_GET, require_POST
 
-from authentication.views import show_login, login_user, show_register, register_user
-
-from .models import (
+from ..models import (
     TransportationSurvey,
     ElectricitySurvey,
     ReusableItemSurvey,
     DailyEmissionLog,
-    FAQ,
     SavedLocation,
 )
 
-
-from .forms import (
-    TransportationSurveyForm,
-    ElectricitySurveyForm,
-    ReusableItemSurveyForm,
+from ..forms import (
     LocationForm,
     LocationRenameForm,
 )
 
-from .weather_logic import (
+from ..weather_logic import (
     WeatherServiceError,
     get_weather,
     search_locations,
 )
 
-def show_home(request):
-    return render(request, "main-templates/home.html")
 
 def get_weekly_target_summary(user, target_goal_pct=10.0):
     today = timezone.now().date()
@@ -179,23 +166,12 @@ def show_dashboard(request):
                 ElectricitySurvey.objects.filter(user=request.user, created_at__date=last_date)
                                          .aggregate(total=Sum('daily_consumption_kwh'))['total'] or 0)
 
-    # 4. Batasi maksimal 3 rekomendasi teratas agar dashboard tetap bersih
-            
     context = {
         'target_data': target_weekly,
-        'recommendations': recommendations,  
+        'recommendations': recommendations,
         'today_kwh': today_kwh
     }
     return render(request, "dashboard-templates/dashboard.html", context)
-
-@login_required
-@require_GET
-def show_dashboard_survey(request):
-    return render(
-        request,
-        "dashboard-templates/dashboard-survey.html",
-        {"form": TransportationSurveyForm(), "electricity_form": ElectricitySurveyForm(), "reusable_form": ReusableItemSurveyForm()},
-    )
 
 @login_required
 def show_dashboard_weather(request):
@@ -245,165 +221,9 @@ def _sync_daily_emission_logs(user):
 
 @login_required
 @require_GET
-def survey_transport_list_json(request):
-    surveys = TransportationSurvey.objects.filter(
-        user=request.user
-    ).order_by("-created_at")
-
-    data = [
-        {
-            "id": str(survey.id),
-            "mode": survey.get_transport_mode_display(),
-            "mode_val": survey.transport_mode,
-            "distance": float(survey.daily_distance_km),
-            "notes": survey.notes or "",
-            "daily_emission_co2": float(survey.daily_emission_co2),
-        }
-        for survey in surveys
-    ]
-
-    return JsonResponse({"status": "success", "data": data})
-
-@login_required
-def add_transport_survey(request):
-    if request.method == "POST":
-        form = TransportationSurveyForm(request.POST)
-
-        if form.is_valid():
-            survey = form.save(commit=False)
-            survey.user = request.user
-            survey.save()
-
-            _sync_daily_emission_logs(request.user)
-
-            return JsonResponse({
-                'status': 'success',
-                'message': 'Data berhasil ditambahkan.'
-            }, status=201)
-        else:
-            return JsonResponse({
-                'status': 'error',
-                'errors': form.errors
-            }, status=400)
-
-    return JsonResponse({
-        "status": "error",
-        "message": "Method tidak diizinkan."
-    }, status=405)
-
-@login_required
-def edit_transport_survey(request, survey_id):
-    survey = get_object_or_404(
-        TransportationSurvey,
-        id=survey_id,
-        user=request.user
-    )
-
-    if request.method == "POST":
-        form = TransportationSurveyForm(request.POST, instance=survey)
-
-        if form.is_valid():
-            form.save()
-            _sync_daily_emission_logs(request.user)
-
-            return JsonResponse({
-                'status': 'success',
-                'message': 'Data berhasil diperbarui.'
-            }, status=200)
-        else:
-            return JsonResponse({
-                'status': 'error',
-                'errors': form.errors
-            }, status=400)
-
-    return JsonResponse({
-        "status": "error",
-        "message": "Method tidak diizinkan."
-    }, status=405)
-
-@login_required
-def delete_transport_survey(request, survey_id):
-    survey = get_object_or_404(
-        TransportationSurvey,
-        id=survey_id,
-        user=request.user
-    )
-
-    if request.method == "POST":
-        survey.delete()
-        _sync_daily_emission_logs(request.user)
-
-        return JsonResponse({
-            'status': 'success',
-            'message': 'Data berhasil dihapus.'
-        }, status=200)
-
-    return JsonResponse({
-        "status": "error",
-        "message": "Method tidak diizinkan."
-    }, status=405)
-
-@login_required
-@require_GET
-def survey_electricity_list_json(request):
-    surveys = ElectricitySurvey.objects.filter(user=request.user).order_by('-created_at')
-    return JsonResponse({
-        'status': 'success',
-        'data': [
-            {
-                'id': str(item.id),
-                'device_type': item.device_type,
-                'device_label': item.device_label(),
-                'device_name': item.device_name or '',
-                'quantity': item.quantity,
-                'power_watts': str(item.power_watts),
-                'daily_usage_hours': str(item.daily_usage_hours),
-                'daily_consumption_kwh': str(item.daily_consumption_kwh),
-                'daily_emission_co2': str(item.daily_emission_co2),
-                'notes': item.notes or '',
-            } for item in surveys
-        ],
-    })
-
-@login_required
-@require_POST
-def add_electricity_survey(request):
-    form = ElectricitySurveyForm(request.POST)
-    if not form.is_valid():
-        return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
-
-    item = form.save(commit=False)
-    item.user = request.user
-    item.save()
-    _sync_daily_emission_logs(request.user)
-    return JsonResponse({'status': 'success', 'message': 'Perangkat berhasil ditambahkan.'}, status=201)
-
-@login_required
-@require_POST
-def edit_electricity_survey(request, survey_id):
-    item = get_object_or_404(ElectricitySurvey, pk=survey_id, user=request.user)
-    form = ElectricitySurveyForm(request.POST, instance=item)
-    if not form.is_valid():
-        return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
-
-    form.save()
-    _sync_daily_emission_logs(request.user)
-    return JsonResponse({'status': 'success', 'message': 'Perangkat berhasil diperbarui.'})
-
-@login_required
-@require_POST
-def delete_electricity_survey(request, survey_id):
-    item = get_object_or_404(ElectricitySurvey, pk=survey_id, user=request.user)
-    item.delete()
-    _sync_daily_emission_logs(request.user)
-    return JsonResponse({'status': 'success', 'message': 'Perangkat berhasil dihapus.'})
-
-@login_required
-@require_GET
 def emission_dashboard(request):
     user = request.user
-    
-    # Sinkronisasi data log harian
+
     _sync_daily_emission_logs(user)
 
     today = timezone.now().date()
@@ -412,7 +232,6 @@ def emission_dashboard(request):
     today_log = DailyEmissionLog.objects.filter(user=user, date=today).first()
     today_emission = float(today_log.total_emission_co2) if today_log else 0.0
 
-    # 2. Total emisi RIIL 7 HARI TERAKHIR dari DailyEmissionLog
     total_7days_emission = float(
         DailyEmissionLog.objects.filter(
             user=user,
@@ -420,7 +239,6 @@ def emission_dashboard(request):
             date__lte=today
         ).aggregate(total=Sum('total_emission_co2'))['total'] or 0.0
     )
-
 
     daily_survey_distance = float(
         TransportationSurvey.objects.filter(user=user).aggregate(
@@ -446,29 +264,23 @@ def emission_dashboard(request):
         )['total'] or 0.0
     )
 
-    # Akumulasi jarak 7 hari 
     total_7days_distance = daily_survey_distance * 7.0
 
-    # Baseline 7 Hari jika seluruh perjalanan menggunakan Mobil Bensin (0.190 kg CO2/km)
     transport_baseline_7days = total_7days_distance * 0.190
     electricity_7days = electricity_daily * 7.0
     baseline_7days_emission = transport_baseline_7days + electricity_7days
     estimated_7days_emission = (transport_daily + electricity_daily) * 7.0
 
-    # 1. Penghematan CO2 Seminggu (Baseline Mobil 7 Hari - Emisi Riil 7 Hari)
     co2_saved_7days = max(0.0, transport_baseline_7days - transport_daily * 7.0)
 
-    # 2. Eco Score Seminggu (Efisiensi emisi seminggu terakhir)
     if baseline_7days_emission > 0:
         score = (1.0 - (estimated_7days_emission / baseline_7days_emission)) * 100
         eco_score = max(0, min(100, round(score)))
     else:
         eco_score = 100
 
-    # 3. Beban Serap Pohon HARI INI (1 pohon dewasa ~ 0.06 kg CO2e / hari)
     trees_saved = round(today_emission / 0.06) if today_emission > 0 else 0
 
-    # 4. Perjalanan Dihindari seminggu (Moda ramah lingkungan x 7 hari)
     eco_friendly_modes = ['walk_bike', 'krl_mrt_lrt', 'busway']
     daily_eco_distance = float(
         TransportationSurvey.objects.filter(
@@ -479,17 +291,17 @@ def emission_dashboard(request):
     avoided_km_7days = daily_eco_distance * 7.0
 
     context = {
-        'today_emission': round(today_emission, 2),       
-        'total_7days_emission': round(total_7days_emission, 2), 
-        'co2_saved': round(co2_saved_7days, 2),            
-        'eco_score': eco_score,                            
-        'trees_saved': trees_saved,                        
-        'avoided_km': round(avoided_km_7days, 2),    
+        'today_emission': round(today_emission, 2),
+        'total_7days_emission': round(total_7days_emission, 2),
+        'co2_saved': round(co2_saved_7days, 2),
+        'eco_score': eco_score,
+        'trees_saved': trees_saved,
+        'avoided_km': round(avoided_km_7days, 2),
         'transport_emission_today': round(transport_daily, 2),
-        'electricity_emission_today': round(electricity_daily, 2),      
+        'electricity_emission_today': round(electricity_daily, 2),
         'reusable_emission_saved_today': round(reusable_daily, 2),
     }
-    
+
     return render(request, 'dashboard-templates/dashboard-emission.html', context)
 
 @login_required
@@ -506,7 +318,7 @@ def emission_chart_api(request):
         target_date = today - timedelta(days=i)
         log = DailyEmissionLog.objects.filter(user=user, date=target_date).first()
         val = float(log.total_emission_co2) if log else 0.0
-        
+
         label = f"{day_names[target_date.weekday()]} ({target_date.day})"
         chart_dates.append(label)
         chart_values.append(val)
@@ -538,7 +350,7 @@ def daily_energy_chart_api(request):
 
         if total == 0 and chart_values:
             total = chart_values[-1]
-        
+
         label = f"{day_names[target_date.weekday()]} ({target_date.day})"
         chart_dates.append(label)
         chart_values.append(total)
@@ -553,230 +365,6 @@ def daily_energy_chart_api(request):
             }
         ]
     })
-
-def show_faq(request):
-    faq_list = FAQ.objects.filter(
-        is_active=True
-    ).order_by("order", "id")
-
-    return render(request, "main-templates/faq.html", {
-        "faq_list": faq_list,
-    })
-
-def get_faq_json(request):
-    faqs = FAQ.objects.all()
-    data = []
-
-    for faq in faqs:
-        data.append({
-            "pk": str(faq.id),
-            "fields": {
-                "question": faq.question,
-                "answer": faq.answer,
-                "order": faq.order,
-                "is_active": faq.is_active,
-            }
-        })
-
-    return JsonResponse(data, safe=False)
-
-def show_about(request):
-    context = {
-        "name": "GassWatt",
-    }
-
-    return render(request, "main-templates/about.html", context)
-
-
-@login_required
-@require_GET
-def admin_dashboard(request):
-
-    today_local = timezone.localtime(timezone.now()).date()
-    current_year = today_local.year
-
-    # 1. Total pengguna yang terdaftar
-    total_users = User.objects.count()
-
-    # 2. Total Emisi Tercatat
-    emisi_listrik = ElectricitySurvey.objects.aggregate(total=Sum('daily_emission_co2'))['total'] or 0
-    emisi_transport = TransportationSurvey.objects.aggregate(total=Sum('daily_emission_co2'))['total'] or 0
-    emisi_reusable = ReusableItemSurvey.objects.aggregate(total=Sum('daily_emission_co2'))['total'] or 0
-    
-    total_emisi = round(float(emisi_listrik) + float(emisi_transport) + float(emisi_reusable), 2)
-
-    # Total aktivitas
-    today_transport = TransportationSurvey.objects.filter(created_at__date=today_local).count()
-    today_listrik = ElectricitySurvey.objects.filter(created_at__date=today_local).count()
-    today_reusable = ReusableItemSurvey.objects.filter(created_at__date=today_local).count()
-    today_lokasi = SavedLocation.objects.filter(created_at__date=today_local).count()
-
-    total_aktivitas_today = today_transport + today_listrik + today_reusable + today_lokasi
-
-    # 4. Total lokasi/Kota pengguna
-    total_lokasi = SavedLocation.objects.count()
-
-    # DATA BULANAN
-    months_labels = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
-    monthly_users = []
-
-    # Akumulasi pengguna terdatar hingga akhir bulan masing-masing
-    for month in range(1, 13):
-        user_count = User.objects.filter(
-            date_joined__year__lte=current_year,
-            date_joined__month__lte=month
-        ).count()
-        monthly_users.append(user_count)
-
-    # --- 2. DATA HARIAN (7 Hari Terakhir) ---
-    days_map = {0: 'Sen', 1: 'Sel', 2: 'Rab', 3: 'Kam', 4: 'Jum', 5: 'Sab', 6: 'Min'}
-    daily_labels = []
-    daily_activities = []
-
-    for i in range(6, -1, -1):
-        target_date = today_local - timedelta(days=i)
-        daily_labels.append(f"{days_map[target_date.weekday()]} ({target_date.day})")
-
-        act_count = (
-            TransportationSurvey.objects.filter(created_at__date=target_date).count() +
-            ElectricitySurvey.objects.filter(created_at__date=target_date).count() +
-            ReusableItemSurvey.objects.filter(created_at__date=target_date).count() +
-            SavedLocation.objects.filter(created_at__date=target_date).count()
-        )
-        daily_activities.append(act_count)
-
-    context = {
-        "admin_name": (
-                    request.user.get_full_name() or request.user.username
-                    if request.user.is_authenticated
-                    else "Administrator"
-                ),
-        'total_users' : total_users,
-        'total_emisi' : total_emisi,
-        'total_aktivitas_today' : total_aktivitas_today,
-        'total_lokasi' : total_lokasi,
-        # Data untuk chart
-        'emisi_listrik': emisi_listrik,
-        'emisi_transport' : emisi_transport,
-        'emisi_reusable' : emisi_reusable,
-
-        # Data JSON
-        'monthly_labels_json': json.dumps(months_labels),
-        'monthly_users_json': json.dumps(monthly_users),
-        'daily_labels_json': json.dumps(daily_labels),
-        'daily_activities_json': json.dumps(daily_activities),
-    }
-
-    return render(request, "admin-templates/admin-dashboard.html", context)
-
-@login_required
-def kelola_pengguna(request):
-    users = User.objects.all().order_by('-date_joined')
-    user_list = []
-
-    for u in users:
-        # Hitung akumulasi emisi per user dari 3 survey
-        e_electricity = ElectricitySurvey.objects.filter(user=u).aggregate(s=Sum('daily_emission_co2'))['s'] or 0
-        e_transport = TransportationSurvey.objects.filter(user=u).aggregate(s=Sum('daily_emission_co2'))['s'] or 0
-        e_reusable = ReusableItemSurvey.objects.filter(user=u).aggregate(s=Sum('daily_emission_co2'))['s'] or 0
-        
-        total_emission = round(float(e_electricity) + float(e_transport) + float(e_reusable), 1)
-        
-        user_list.append({
-            'id': u.id,
-            'nama' : u.get_full_name() or u.username,
-            'email' : u.email or "-",
-            'role' : 'Admin' if u.is_staff or u.is_superuser else 'Pengguna',
-            'total_emisi' : total_emission,
-            'status' : 'Aktif' if u.is_active else 'Inaktif',
-            'is_self' : u == request.user
-        })
-
-    context = {
-        'admin_name' : request.user.get_full_name() or request.user.username,
-        'users' : user_list,
-        'total_count' : len(user_list),
-    }
-
-    return render(request, "admin-templates/kelola-pengguna.html", context)
-
-
-@login_required
-@require_POST
-def delete_user(request, user_id):
-    """Endpoint untuk menghapus/menonaktifkan pengguna"""
-    try:
-        user_to_delete = User.objects.get(id=user_id)
-        if user_to_delete == request.user:
-            return JsonResponse({'status': 'error', 'message': 'Tidak bisa menghapus akun sendiri!'}, status=400)
-
-        user_to_delete.delete()
-        return JsonResponse({'status': 'success', 'message': 'Pengguna berhasil dihapus.'})
-    except User.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'Pengguna tidak ditemukan.'}, status=404)
-
-@login_required
-def kelola_faq(request):
-    faq_list = FAQ.objects.all().order_by("order", "id")
-    context = {
-        "faq_list": faq_list,
-        "admin_name": (
-            request.user.get_full_name() or request.user.username
-            if request.user.is_authenticated
-            else "Administrator"
-        ),
-    }
-
-    return render(request, "admin-templates/kelola-faq.html", context)
-
-## @login_required
-@require_POST
-def add_faq(request):
-    question = request.POST.get("question", "").strip()
-    answer = request.POST.get("answer", "").strip()
-
-    if not question or not answer:
-        messages.error(request, "Pertanyaan dan jawaban wajib diisi.")
-        return redirect('main:kelola_faq')
-    
-
-    FAQ.objects.create (
-        question=question,
-        answer=answer,
-        order=(FAQ.objects.order_by("-order").values_list("order", flat=True).first() or 0) + 1,
-        is_active=True,
-    )
-
-    messages.success(request, "FAQ berhasil ditambahkan.")
-    return redirect('main:kelola_faq')
-
-## @login_required
-@require_POST
-def edit_faq(request, faq_id):
-    faq = get_object_or_404(FAQ, id=faq_id)
-
-    question = request.POST.get("question", "").strip()
-    answer = request.POST.get("answer", "").strip()
-
-    if not question or not answer:
-        messages.error(request, "Pertanyaan dan jawaban wajib diisi.")
-        return redirect("main:kelola_faq")
-
-    faq.question = question
-    faq.answer = answer
-    faq.save()
-
-    messages.success(request, "FAQ berhasil diperbarui")
-    return redirect("main:kelola_faq")
-
-## @login_required
-@require_POST
-def delete_faq(request, faq_id):
-    faq = get_object_or_404(FAQ, id=faq_id)
-    faq.delete()
-
-    messages.success(request, "FAQ berhasil dihapus.")
-    return redirect('main:kelola_faq')
 
 @login_required
 @require_GET
@@ -838,6 +426,7 @@ def serialize_locations(location):
         "longitude": location.longitude,
         "is_active": location.is_active,
     }
+
 
 @login_required
 @require_GET
@@ -973,69 +562,3 @@ def delete_location(request, location_id):
         "status": "success",
         "was_active": was_active
     })
-
-@login_required
-def survey_reusable_list_json(request):
-    item_type = request.GET.get("item_type", "").strip()
-    surveys = ReusableItemSurvey.objects.filter(user=request.user)
-    if item_type in dict(ReusableItemSurvey.ITEM_CHOICES):
-        surveys = surveys.filter(item_type=item_type)
-    surveys = surveys.order_by("-created_at")
-    data = [
-        {
-            "id": str(item.id),
-            "item": item.get_item_type_display(),
-            "item_val": item.item_type,
-            "quantity": item.quantity,
-            "uses_per_week": item.uses_per_week,
-            "notes": item.notes or "",
-            "daily_emission_co2": float(item.daily_emission_co2),
-        }
-        for item in surveys
-    ]
-    return JsonResponse({"status": "success", "data": data})  
- 
-@login_required
-def add_reusable_survey(request):
-    if request.method == "POST":
-        form = ReusableItemSurveyForm(request.POST)
-        if form.is_valid():
-            item = form.save(commit=False)
-            item.user = request.user
-            item.save()
-            _sync_daily_emission_logs(request.user)
-            return JsonResponse({
-                'status': 'success',
-                'message': 'Data berhasil ditambahkan.'
-            }, status=201)
-        else:
-            return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
- 
-    return JsonResponse({"status": "error", "message": "Method tidak diizinkan."}, status=405)
-
-@login_required
-def edit_reusable_survey(request, survey_id):
-    item = get_object_or_404(ReusableItemSurvey, id=survey_id, user=request.user)
- 
-    if request.method == "POST":
-        form = ReusableItemSurveyForm(request.POST, instance=item)
-        if form.is_valid():
-            form.save()
-            _sync_daily_emission_logs(request.user)
-            return JsonResponse({'status': 'success', 'message': 'Data berhasil diperbarui.'}, status=200)
-        else:
-            return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
- 
-    return JsonResponse({"status": "error", "message": "Method tidak diizinkan."}, status=405)
- 
- 
-@login_required
-def delete_reusable_survey(request, survey_id):
-    item = get_object_or_404(ReusableItemSurvey, id=survey_id, user=request.user)
- 
-    if request.method == "POST":
-        item.delete()
-        _sync_daily_emission_logs(request.user)
-        return JsonResponse({'status': 'success', 'message': 'Data berhasil dihapus.'}, status=200)
- 
-    return JsonResponse({"status": "error", "message": "Method tidak diizinkan."}, status=405)

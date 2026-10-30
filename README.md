@@ -119,6 +119,7 @@ python manage.py test
 | 5 | Implementasi Pencarian Lokasi | Gemini AI | Membantu dalam mengimplementasikan Geocoding Open-Meteo untuk pencarian lokasi dan pengambilan koordinat melalui GPS.
 | 6 | Implementasi Survey Barang Reusable | Chat GPT | Membantu menyusun rancangan interaksi AJAX di sisi klien, rumus perhitungan emisi (jumlah × frekuensi pemakaian per minggu × faktor emisi ÷ 7).  
 | 7 | Pengembangan Fitur Publik (Home, About, FAQ) | Chat GPT | Membantu menerjemahkan desain Figma, serta membantu menyelesaikan konflik Git dan kendala deployment ke PWS.  
+| 8 | Implementasi Unit Testing | Copilot | Membantu membuat unit test yang efisien dan coverage penuh sehingga membantu menemukan bug |
 
 ## Referensi
 

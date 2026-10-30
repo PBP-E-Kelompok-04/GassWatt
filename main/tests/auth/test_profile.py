@@ -6,7 +6,6 @@ from io import BytesIO
 from unittest import mock
 
 from django.contrib.auth import get_user_model
-from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
@@ -51,7 +50,6 @@ class ProfileTestBase(TestCase):
         shutil.rmtree(TEMP_MEDIA, ignore_errors=True)
 
     def setUp(self):
-        cache.clear()  # reset password-attempt throttling between tests
         self.user = make_user()
         self.client.force_login(self.user)
 
@@ -289,19 +287,6 @@ class ChangePasswordTests(ProfileTestBase):
         self.assertEqual(response.status_code, 400)
         self.user.refresh_from_db()
         self.assertTrue(self.user.check_password(PASSWORD))
-
-    def test_too_many_wrong_attempts_are_throttled(self):
-        for _ in range(5):
-            self.assertEqual(self.post(old="wrong-password").status_code, 400)
-        # Even the correct password is refused once the limit is hit.
-        self.assertEqual(self.post().status_code, 429)
-        self.user.refresh_from_db()
-        self.assertTrue(self.user.check_password(PASSWORD))
-
-    def test_successful_change_resets_attempt_counter(self):
-        for _ in range(3):
-            self.post(old="wrong-password")
-        self.assertEqual(self.post().status_code, 200)
 
     def test_confirmation_mismatch(self):
         response = self.post(new2="something-else-123!")

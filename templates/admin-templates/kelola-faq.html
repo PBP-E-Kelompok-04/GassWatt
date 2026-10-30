@@ -136,7 +136,7 @@
                 <span class="close-btn-figma" onclick="closeModal()">&times;</span>
             </div>
 
-            <form id="faqForm" action="{% url 'main:add_faq' %}" method="POST">
+            <form id="addfaqForm" action="" method="POST" data-add-url="{% url 'main:add_faq' %}">
                 {% csrf_token %}
                 <div class="form-field-figma">
                     <label>Pertanyaan (Question)</label>

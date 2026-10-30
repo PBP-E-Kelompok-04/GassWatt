@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import math
 
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db import IntegrityError, transaction
 from django.db.models import Sum
 from django.http import JsonResponse
@@ -584,8 +584,9 @@ def kelola_faq(request):
 
     return render(request, "admin-templates/kelola-faq.html", context)
 
-## @login_required
+@login_required
 @require_POST
+@user_passes_test(lambda user: user.is_superuser)
 def add_faq(request):
     question = request.POST.get("question", "").strip()
     answer = request.POST.get("answer", "").strip()
@@ -605,8 +606,9 @@ def add_faq(request):
     messages.success(request, "FAQ berhasil ditambahkan.")
     return redirect('main:kelola_faq')
 
-## @login_required
+@login_required
 @require_POST
+@user_passes_test(lambda user: user.is_superuser)
 def edit_faq(request, faq_id):
     faq = get_object_or_404(FAQ, id=faq_id)
 
@@ -624,8 +626,9 @@ def edit_faq(request, faq_id):
     messages.success(request, "FAQ berhasil diperbarui")
     return redirect("main:kelola_faq")
 
-## @login_required
+@login_required
 @require_POST
+@user_passes_test(lambda user: user.is_superuser)
 def delete_faq(request, faq_id):
     faq = get_object_or_404(FAQ, id=faq_id)
     faq.delete()

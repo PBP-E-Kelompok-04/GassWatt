@@ -1,10 +1,10 @@
 from datetime import timedelta
 from unittest.mock import patch
 
-import requests
+import requests, re
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -14,6 +14,7 @@ from ..models.model_survey import (
     ElectricitySurvey,
     ReusableItemSurvey,
     DailyEmissionLog,
+    FAQ,
 )
 from ..views import get_weekly_target_summary
 
@@ -850,3 +851,207 @@ class ElectricitySurveyTests(TestCase):
             404,
         )
         self.assertTrue(ElectricitySurvey.objects.filter(pk=other_item.id).exists())
+
+#Reusable Survey Test
+
+class ReusableItemSurveyFlowTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="reusable-user",
+            email="reusable-user@example.com",
+            password="test-password",
+        )
+        self.client.force_login(self.user)
+
+    def test_survey_page_renders_reusable_form_and_ajax_urls(self):
+        response = self.client.get(reverse("main:show_dashboard_survey"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'name="item_type"')
+        self.assertContains(response, 'name="quantity"')
+        self.assertContains(response, 'name="uses_per_week"')
+        self.assertContains(response, 'id="reusableFilter"')
+
+    def test_reusable_survey_crud_and_list(self):
+        add_response = self.client.post(
+            reverse("main:add_reusable_survey"),
+            {
+                "item_type": "botol_minum",
+                "quantity": 1,
+                "uses_per_week": 7,
+                "notes": "Botol minum pribadi",
+            },
+        )
+
+        self.assertEqual(add_response.status_code, 201)
+        survey_id = str(ReusableItemSurvey.objects.get(user=self.user).id)
+
+        list_response = self.client.get(
+            reverse("main:survey_reusable_list_json")
+        )
+        self.assertEqual(list_response.status_code, 200)
+
+        survey_data = list_response.json()["data"][0]
+        self.assertEqual(survey_data["id"], survey_id)
+        self.assertEqual(survey_data["item_val"], "botol_minum")
+        self.assertEqual(survey_data["quantity"], 1)
+        self.assertEqual(survey_data["uses_per_week"], 7)
+        self.assertEqual(survey_data["daily_emission_co2"], 0.01)
+
+        edit_response = self.client.post(
+            reverse("main:edit_reusable_survey", args=[survey_id]),
+            {
+                "item_type": "tote_bag",
+                "quantity": 2,
+                "uses_per_week": 5,
+                "notes": "Tote bag",
+            },
+        )
+        self.assertEqual(edit_response.status_code, 200)
+
+        updated_data = self.client.get(
+            reverse("main:survey_reusable_list_json")
+        ).json()["data"][0]
+        self.assertEqual(updated_data["item_val"], "tote_bag")
+        self.assertEqual(updated_data["quantity"], 2)
+
+        delete_response = self.client.post(
+            reverse("main:delete_reusable_survey", args=[survey_id])
+        )
+        self.assertEqual(delete_response.status_code, 200)
+        self.assertEqual(
+            self.client.get(
+                reverse("main:survey_reusable_list_json")
+            ).json()["data"],
+            [],
+        )
+
+    def test_reusable_survey_requires_login_and_updates_emission_log(self):
+        add_response = self.client.post(
+            reverse("main:add_reusable_survey"),
+            {
+                "item_type": "botol_minum",
+                "quantity": 1,
+                "uses_per_week": 7,
+            },
+        )
+        self.assertEqual(add_response.status_code, 201)
+
+        log = DailyEmissionLog.objects.get(user=self.user)
+        self.assertEqual(float(log.total_emission_co2), -0.01)
+
+        self.client.logout()
+        response = self.client.get(
+            reverse("main:survey_reusable_list_json")
+        )
+        self.assertEqual(response.status_code, 302)
+
+#Public Features Test
+
+PASSWORD = "Sandi-uji-123"
+
+NO_MANIFEST = override_settings(STORAGES={
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
+    },
+})
+
+
+@NO_MANIFEST
+class PublicFeaturesTests(TestCase):
+
+    def test_home_page_and_cta(self):
+        response = self.client.get(reverse("main:show_home"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Track Your Energy")
+
+        html = response.content.decode()
+        tag = re.search(r'<a[^>]*class="btn-cta"[^>]*>', html)
+        self.assertIsNotNone(tag)
+
+        self.assertIn(
+            reverse("main:show_register"),
+            tag.group(0)
+        )
+
+        user = User.objects.create_user("pengguna", password=PASSWORD)
+        self.client.force_login(user)
+
+        response = self.client.get(reverse("main:show_home"))
+        self.assertIn(
+            reverse("main:show_dashboard"),
+            response.content.decode()
+        )
+
+    def test_about_page(self):
+        response = self.client.get(reverse("main:show_about"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Visi")
+        self.assertContains(response, "Misi")
+
+    def test_faq_page_shows_only_active_faqs(self):
+        FAQ.objects.create(
+            question="Pertanyaan pertama",
+            answer="Jawaban pertama",
+            order=1
+        )
+        FAQ.objects.create(
+            question="Pertanyaan kedua",
+            answer="Jawaban kedua",
+            order=2
+        )
+        FAQ.objects.create(
+            question="Pertanyaan tersembunyi",
+            answer="Jawaban rahasia",
+            order=3,
+            is_active=False
+        )
+
+        response = self.client.get(reverse("main:show_faq"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Pertanyaan pertama")
+        self.assertContains(response, "Pertanyaan kedua")
+        self.assertNotContains(response, "Pertanyaan tersembunyi")
+
+        content = response.content.decode()
+        self.assertLess(
+            content.index("Pertanyaan pertama"),
+            content.index("Pertanyaan kedua")
+        )
+
+    def test_faq_admin_protection(self):
+        faq = FAQ.objects.create(
+            question="Pertanyaan awal",
+            answer="Jawaban awal",
+            order=1
+        )
+
+        user = User.objects.create_user("biasa", password=PASSWORD)
+
+        # User biasa
+        self.client.force_login(user)
+        self.client.post(
+            reverse("main:add_faq"),
+            {"question": "Baru", "answer": "Isi"}
+        )
+        self.assertEqual(FAQ.objects.count(), 1)
+
+        # User biasa
+        self.client.post(
+            reverse("main:edit_faq", args=[faq.id]),
+            {"question": "Diubah", "answer": "Diubah"}
+        )
+        faq.refresh_from_db()
+        self.assertEqual(faq.question, "Pertanyaan awal")
+
+        # Admin
+        admin = User.objects.create_superuser("admin", password=PASSWORD)
+        self.client.force_login(admin)
+        self.client.post(
+            reverse("main:add_faq"),
+            {"question": "Baru", "answer": "Isi"}
+        )
+        self.assertEqual(FAQ.objects.count(), 2)

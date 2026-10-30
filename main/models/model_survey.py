@@ -69,6 +69,17 @@ class ElectricitySurvey(models.Model):
         ('other', 'Perangkat Lainnya'),
     ]
 
+    STANDARD_POWER_WATTS = {
+        'lamp': 10,
+        'fan': 50,
+        'ac': 1000,
+        'refrigerator': 150,
+        'television': 100,
+        'laptop': 65,
+        'desktop': 300,
+        'washing_machine': 500,
+    }
+
     EMISSION_FACTOR_KG_PER_KWH = 0.717
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

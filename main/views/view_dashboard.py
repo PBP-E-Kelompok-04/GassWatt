@@ -264,20 +264,40 @@ def emission_dashboard(request):
         )['total'] or 0.0
     )
 
-    total_7days_distance = daily_survey_distance * 7.0
+    electricity_baseline_kwh = sum(
+        survey.quantity
+        * ElectricitySurvey.STANDARD_POWER_WATTS.get(
+            survey.device_type, float(survey.power_watts)
+        )
+        * 24
+        / 1000
+        for survey in ElectricitySurvey.objects.filter(user=user)
+    )
+    electricity_baseline = (
+        electricity_baseline_kwh * ElectricitySurvey.EMISSION_FACTOR_KG_PER_KWH
+    )
 
-    transport_baseline_7days = total_7days_distance * 0.190
-    electricity_7days = electricity_daily * 7.0
-    baseline_7days_emission = transport_baseline_7days + electricity_7days
-    estimated_7days_emission = (transport_daily + electricity_daily) * 7.0
+    transport_baseline_7days = daily_survey_distance * 7.0 * 0.190
+    electricity_baseline_7days = electricity_baseline * 7.0
+    baseline_7days_emission = (
+        transport_baseline_7days + electricity_baseline_7days
+    )
+    actual_7days_emission = (
+        transport_daily + electricity_daily - reusable_daily
+    ) * 7.0
 
-    co2_saved_7days = max(0.0, transport_baseline_7days - transport_daily * 7.0)
+    co2_saved_7days = max(
+        0.0,
+        transport_baseline_7days - transport_daily * 7.0,
+    )
 
     if baseline_7days_emission > 0:
-        score = (1.0 - (estimated_7days_emission / baseline_7days_emission)) * 100
+        score = (
+            1.0 - (actual_7days_emission / baseline_7days_emission)
+        ) * 100
         eco_score = max(0, min(100, round(score)))
     else:
-        eco_score = 100
+        eco_score = None
 
     trees_saved = round(today_emission / 0.06) if today_emission > 0 else 0
 

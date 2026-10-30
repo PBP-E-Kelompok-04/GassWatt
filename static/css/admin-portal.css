@@ -130,8 +130,8 @@
 }
 
 .user-trend-card {
-    background-color: #ffffff;      /* Mengisi background warna putih */
-    border: 1.5px solid #a3e6cd;    /* Border hijau lembut */
+    background-color: #ffffff;     
+    border: 1.5px solid #a3e6cd;    
     border-radius: 24px;         
     padding: 24px 32px;
     width: 100%;
@@ -843,13 +843,13 @@
     overflow-wrap: anywhere;
 }
 
-/* 1. Kunci posisi background blur di PALING BELAKANG */
+
 .bg-blur,
 .blur-1,
 .blur-2 {
     position: absolute !important;
     z-index: 0 !important;
-    pointer-events: none; /* Mencegah blur menghalangi klik mouse */
+    pointer-events: none;
 }
 
 

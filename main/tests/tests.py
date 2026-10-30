@@ -42,7 +42,7 @@ class TransportationSurveyFlowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'name="transport_mode"')
         self.assertContains(response, 'name="daily_distance_km"')
-        self.assertContains(response, 'data-list-url="/dashboard/survey/list/"')
+        self.assertContains(response, 'data-list-url="/dashboard/survey/transport/list/"')
 
     def test_transport_survey_crud_and_list(self):
         add_response = self.client.post(
@@ -547,14 +547,16 @@ class WeatherFlowTests(TestCase):
         self.forecast = {
             "timezone": "Asia/Jakarta",
             "current": {
-                "time": "2026-10-22T14:00", "temperature_2m": 29,
-                "relative_humidity_2m": 70, "precipitation": 0,
-                "weather_code": 2, "is_day": 1, "wind_speed_10m": 12,
+                "time": "2026-10-22T14:00",
+                "temperature_2m": 29,
+                "relative_humidity_2m": 70,
+                "precipitation": 0,
+                "weather_code": 2,
+                "is_day": 1,
+                "wind_speed_10m": 12,
                 "cloud_cover": 30,
-            },
-            "hourly": {
-                "time": ["2026-10-22T14:00"],
-                "precipitation_probability": [15], "uv_index": [4],
+                "precipitation_probability": 15,
+                "uv_index": 4,
             },
         }
         self.air = {
@@ -656,8 +658,8 @@ class WeatherFlowTests(TestCase):
             self.assertFalse(form.is_valid())
         self.assertFalse(LocationRenameForm(data={"name": "  "}).is_valid())
 
-    @patch("main.views.search_locations")
-    @patch("main.views.get_weather")
+    @patch("main.views.view_dashboard.search_locations")
+    @patch("main.views.view_dashboard.get_weather")
     def test_api_search_weather_and_errors(self, mock_weather, mock_search):
         mock_search.return_value = [{"name": "Depok", "latitude": -6.4, "longitude": 106.8}]
         mock_weather.return_value = {"temperature": 29, "aqi": 55}
@@ -706,7 +708,8 @@ class WeatherFlowTests(TestCase):
         self.assertIsNone(weather["aqi"])
         self.assertNotIn("None", str(weather["recommendations"]))
         cache.clear()
-        self.forecast["hourly"] = {}
+        self.forecast["current"].pop("precipitation_probability", None)
+        self.forecast["current"].pop("uv_index", None)
         self.forecast["current"]["wind_speed_10m"] = None
         self.forecast["current"]["precipitation"] = None
         weather = weather_logic.get_weather(-6.4, 106.8)
@@ -750,7 +753,6 @@ class WeatherFlowTests(TestCase):
         self.assertEqual(weather_logic.parse_wmo_code(999)[0], "Kondisi tidak diketahui")
         self.assertTrue(weather_logic.weather_metric_icons(weather_logic.parse_forecast(self.forecast))["code"])
         self.assertEqual(weather_logic.icon_when_available("temp", None), "")
-        self.assertEqual(weather_logic.value_for_time({}, "uv_index", "2026-10-22T14", hourly=True), None)
 
         parsed = weather_logic.parse_forecast(self.forecast)
         self.assertEqual(parsed["temperature"], 29)

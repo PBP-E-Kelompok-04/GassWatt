@@ -17,7 +17,6 @@ REGISTER_URL = "main:show_register"
 def show_login(request):
     return render(request, "authentication-templates/login.html")
 
-
 @require_POST
 def login_user(request):
     identifier = request.POST.get("identifier", "").strip()
@@ -39,11 +38,9 @@ def login_user(request):
         return redirect(ADMIN_DASHBOARD_URL)
     return redirect(USER_DASHBOARD_URL)
 
-
 @require_GET
 def show_register(request):
     return render(request, "authentication-templates/register.html")
-
 
 @require_POST
 def register_user(request):
@@ -82,7 +79,6 @@ def register_user(request):
 
     messages.success(request, "Akun telah dibuat. Anda bisa login.")
     return redirect(LOGIN_URL)
-
 
 @require_POST
 def logout_user(request):

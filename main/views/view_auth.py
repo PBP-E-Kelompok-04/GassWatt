@@ -8,6 +8,7 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
 from main.views.view_decorators import redirect_if_authenticated
+from django.views.decorators.cache import never_cache
 
 User = get_user_model()
 
@@ -80,11 +81,13 @@ def _password_errors(password, username="", email=""):
 
 # Views
 
+@never_cache
 @redirect_if_authenticated
 @require_GET
 def show_login(request):
     return render(request, "authentication-templates/login.html")
 
+@never_cache
 @redirect_if_authenticated
 @require_POST
 def login_user(request):
@@ -116,6 +119,7 @@ def login_user(request):
     target = ADMIN_DASHBOARD_URL if (user.is_staff or user.is_superuser) else USER_DASHBOARD_URL
     return JsonResponse({"ok": True, "redirect_url": reverse(target)})
 
+@never_cache
 @redirect_if_authenticated
 @require_GET
 def show_register(request):
@@ -145,6 +149,7 @@ def validate_field(request):
 
     return JsonResponse({"ok": not found, "errors": {field: found} if found else {}})
 
+@never_cache
 @redirect_if_authenticated
 @require_POST
 def register_user(request):

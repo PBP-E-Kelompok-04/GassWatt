@@ -1,6 +1,6 @@
 import uuid
+from django.conf import settings
 from django.db import models
-from django.contrib.auth.models import User
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db.models import Q
 
@@ -27,7 +27,7 @@ class TransportationSurvey(models.Model):
     }
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='transport_surveys')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='transport_surveys')
     
     transport_mode = models.CharField(
         max_length=20, 
@@ -72,7 +72,7 @@ class ElectricitySurvey(models.Model):
     EMISSION_FACTOR_KG_PER_KWH = 0.717
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='electricity_surveys')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='electricity_surveys')
     device_type = models.CharField(max_length=20, choices=DEVICE_CHOICES, default='lamp')
     device_name = models.CharField(max_length=100, blank=True, null=True)
     quantity = models.PositiveIntegerField(default=1, validators=[MinValueValidator(1)])
@@ -100,7 +100,7 @@ class DailyEmissionLog(models.Model):
     Model snapshot harian untuk kebutuhan grafik dashboard
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='daily_emission_logs')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='daily_emission_logs')
     date = models.DateField()
     total_emission_co2 = models.DecimalField(max_digits=8, decimal_places=3, default=0.000)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -124,7 +124,7 @@ class FAQ(models.Model):
         return self.question
 
 class SavedLocation(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="saved_locations")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="saved_locations")
     name = models.CharField(max_length=255)
     latitude = models.FloatField(validators=[MinValueValidator(-90), MaxValueValidator(90)])
     longitude = models.FloatField(validators=[MinValueValidator(-180), MaxValueValidator(180)])
@@ -160,7 +160,7 @@ class ReusableItemSurvey(models.Model):
     }
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reusable_surveys')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='reusable_surveys')
 
     item_type = models.CharField(max_length=20, choices=ITEM_CHOICES, default='botol_minum',)
     quantity = models.PositiveIntegerField(default=1, validators=[MinValueValidator(1)])
@@ -176,4 +176,3 @@ class ReusableItemSurvey(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.get_item_type_display()} ({self.quantity})"
-

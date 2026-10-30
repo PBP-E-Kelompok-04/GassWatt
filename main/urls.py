@@ -15,6 +15,7 @@ urlpatterns = [
     path("login/submit/", views.login_user, name="login_user"),
     path("register/", views.show_register, name="show_register"),
     path("register/submit/", views.register_user, name="register_user"),
+    path("register/validate/", views.validate_field, name="validate_field"),
     path("logout/", views.logout_user, name="logout_user"),
 
     # Dashboard

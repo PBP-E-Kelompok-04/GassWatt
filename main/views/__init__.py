@@ -10,6 +10,7 @@ from .view_auth import (
     show_register,
     register_user,
     logout_user,
+    validate_field
 )
 from .view_dashboard import (
     get_weekly_target_summary,
@@ -51,4 +52,7 @@ from .view_admin import (
     add_faq,
     edit_faq,
     delete_faq,
+)
+from .view_decorators import (
+    _is_admin,
 )

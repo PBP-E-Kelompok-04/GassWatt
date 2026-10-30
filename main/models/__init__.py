@@ -6,3 +6,7 @@ from .model_survey import (
     FAQ,
     SavedLocation,
 )
+from .model_auth import (
+    UserManager,
+    User
+)

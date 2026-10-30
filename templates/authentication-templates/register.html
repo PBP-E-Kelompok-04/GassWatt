@@ -1,4 +1,5 @@
 {% extends 'main-templates/homepage-base.html' %}
+{% load static %}
 {% block title %}GassWatt - Register{% endblock title %}
 {% block body_class %}page-register{% endblock body_class %}
 {% block content %}
@@ -15,20 +16,33 @@
                 </ul>
             {% endif %}
 
-            <form method="post" action="{% url 'main:register_user' %}">
+            <form data-auth-form novalidate method="post"
+                  data-validate-url="{% url 'main:validate_field' %}"
+                  action="{% url 'main:register_user' %}">
                 {% csrf_token %}
 
                 <label for="username">Username</label>
-                <input type="text" id="username" name="username" required>
+                <input type="text" id="username" name="username" autocomplete="username"
+                       maxlength="20" required data-validate aria-describedby="username-error">
+                <div id="username-error" class="field-error" data-error-for="username" role="alert" hidden></div>
 
                 <label for="email">Email</label>
-                <input type="email" id="email" name="email" required>
+                <input type="email" id="email" name="email" autocomplete="email"
+                       required data-validate aria-describedby="email-error">
+                <div id="email-error" class="field-error" data-error-for="email" role="alert" hidden></div>
 
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
+                <input type="password" id="password" name="password" autocomplete="new-password"
+                       maxlength="20" required data-validate aria-describedby="password-error">
+                <div id="password-error" class="field-error" data-error-for="password" role="alert" hidden></div>
 
                 <label for="confirm_password">Confirm password</label>
-                <input type="password" id="confirm_password" name="confirm_password" required>
+                <input type="password" id="confirm_password" name="confirm_password" autocomplete="new-password"
+                       maxlength="20" required data-validate aria-describedby="confirm_password-error">
+                <div id="confirm_password-error" class="field-error" data-error-for="confirm_password" role="alert" hidden></div>
+
+                <div class="field-error" data-error-for="__all__" role="alert" hidden></div>
+                <div class="form-success" data-success role="status" hidden></div>
 
                 <button type="submit">Create account</button>
             </form>
@@ -37,4 +51,5 @@
         </div>
     </section>
 </main>
+<script src="{% static 'js/auth.js' %}" defer></script>
 {% endblock content %}

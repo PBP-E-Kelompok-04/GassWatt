@@ -1,8 +1,7 @@
 from datetime import timedelta
 import json
 
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.contrib import messages
 from django.db.models import Sum
 from django.http import JsonResponse
@@ -10,6 +9,7 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
+from .view_decorators import admin_required, admin_required_json
 from ..models import (
     TransportationSurvey,
     ElectricitySurvey,
@@ -18,7 +18,9 @@ from ..models import (
     SavedLocation,
 )
 
-@login_required
+User = get_user_model()
+
+@admin_required
 @require_GET
 def admin_dashboard(request):
 
@@ -99,7 +101,7 @@ def admin_dashboard(request):
 
     return render(request, "admin-templates/admin-dashboard.html", context)
 
-@login_required
+@admin_required
 def kelola_pengguna(request):
     users = User.objects.all().order_by('-date_joined')
     user_list = []
@@ -131,7 +133,7 @@ def kelola_pengguna(request):
     return render(request, "admin-templates/kelola-pengguna.html", context)
 
 
-@login_required
+@admin_required_json
 @require_POST
 def delete_user(request, user_id):
     """Endpoint untuk menghapus/menonaktifkan pengguna"""
@@ -145,7 +147,7 @@ def delete_user(request, user_id):
     except User.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'Pengguna tidak ditemukan.'}, status=404)
 
-@login_required
+@admin_required
 def kelola_faq(request):
     faq_list = FAQ.objects.all().order_by("order", "id")
     context = {
@@ -159,7 +161,7 @@ def kelola_faq(request):
 
     return render(request, "admin-templates/kelola-faq.html", context)
 
-@login_required
+@admin_required
 @require_POST
 def add_faq(request):
     question = request.POST.get("question", "").strip()
@@ -180,7 +182,7 @@ def add_faq(request):
     messages.success(request, "FAQ berhasil ditambahkan.")
     return redirect('main:kelola_faq')
 
-@login_required
+@admin_required
 @require_POST
 def edit_faq(request, faq_id):
     faq = get_object_or_404(FAQ, id=faq_id)
@@ -199,7 +201,7 @@ def edit_faq(request, faq_id):
     messages.success(request, "FAQ berhasil diperbarui")
     return redirect("main:kelola_faq")
 
-@login_required
+@admin_required
 @require_POST
 def delete_faq(request, faq_id):
     faq = get_object_or_404(FAQ, id=faq_id)

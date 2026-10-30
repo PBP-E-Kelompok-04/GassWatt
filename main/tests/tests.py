@@ -1,8 +1,8 @@
 from datetime import timedelta
-from django.contrib.auth.models import User
 from unittest.mock import patch
 
 import requests
+from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.test import TestCase
 from django.urls import reverse
@@ -20,13 +20,20 @@ from ..views import get_weekly_target_summary
 from .. import weather_logic
 from ..forms import LocationForm, LocationRenameForm, ElectricitySurveyForm
 
+User = get_user_model()
+
+# Membuat user
+def make_user(username, password=None):
+    return User.objects.create_user(
+        username=username,
+        email=f"{username}@example.com",
+        password=password,
+    )
+
 
 class TransportationSurveyFlowTests(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(
-            username="survey-user",
-            password="test-password",
-        )
+        self.user = make_user("survey-user", "test-password")
         self.client.force_login(self.user)
 
     def test_survey_page_renders_form_and_ajax_urls(self):
@@ -129,7 +136,7 @@ class TransportationSurveyFlowTests(TestCase):
         )
 
     def test_transport_survey_cannot_be_accessed_or_changed_by_another_user(self):
-        other_user = User.objects.create_user(username="other-transport-user")
+        other_user = make_user("other-transport-user")
         survey = TransportationSurvey.objects.create(
             user=other_user,
             transport_mode="motor_ice",
@@ -177,7 +184,7 @@ class TransportationSurveyFlowTests(TestCase):
 
 class EmissionDashboardTests(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username="emission-dashboard-user")
+        self.user = make_user("emission-dashboard-user")
         self.client.force_login(self.user)
         self.url = reverse("main:emission_dashboard")
         self.today = timezone.now().date()
@@ -263,7 +270,7 @@ class EmissionDashboardTests(TestCase):
         self.assertEqual(response.status_code, 405)
 
     def test_dashboard_metrics_only_include_the_authenticated_users_surveys(self):
-        other_user = User.objects.create_user(username="other-emission-user")
+        other_user = make_user("other-emission-user")
         TransportationSurvey.objects.create(
             user=other_user,
             transport_mode="car_ice",
@@ -287,7 +294,7 @@ class EmissionDashboardTests(TestCase):
 
 class WeeklyTargetTests(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username="weekly-target-user")
+        self.user = make_user("weekly-target-user")
         self.client.force_login(self.user)
         self.today = timezone.now().date()
 
@@ -347,7 +354,7 @@ class WeeklyTargetTests(TestCase):
 
 class MainDashboardTests(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username="main-dashboard-user")
+        self.user = make_user("main-dashboard-user")
         self.client.force_login(self.user)
         self.today = timezone.now().date()
         self.url = reverse("main:show_dashboard")
@@ -502,7 +509,7 @@ class MainDashboardTests(TestCase):
         self.assertEqual(response.status_code, 405)
 
     def test_recommendations_do_not_include_another_users_survey_data(self):
-        other_user = User.objects.create_user(username="other-recommendation-user")
+        other_user = make_user("other-recommendation-user")
         TransportationSurvey.objects.create(
             user=other_user,
             transport_mode="car_ice",
@@ -532,14 +539,8 @@ class MainDashboardTests(TestCase):
 
 class WeatherFlowTests(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(
-            username="weather-user",
-            password="test-password"
-        )
-        self.other = User.objects.create_user(
-            username="other-weather",
-            password="test-password"
-        )
+        self.user = make_user("weather-user", "test-password")
+        self.other = make_user("other-weather", "test-password")
 
         self.client.force_login(self.user)
         cache.clear()
@@ -777,7 +778,7 @@ class WeatherFlowTests(TestCase):
 
 class ElectricitySurveyTests(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username='electric-user', password='test123')
+        self.user = make_user('electric-user', 'test123')
         self.client.force_login(self.user)
         self.data = {
             'device_type': 'laptop',
@@ -829,7 +830,7 @@ class ElectricitySurveyTests(TestCase):
         self.assertFalse(ElectricitySurvey.objects.filter(pk=item.id).exists())
 
     def test_cannot_edit_or_delete_other_users_data(self):
-        other_user = User.objects.create_user(username='other-user', password='test123')
+        other_user = make_user('other-user', 'test123')
         other_item = ElectricitySurvey.objects.create(
             user=other_user, device_type='laptop', quantity=2,
             power_watts='65', daily_usage_hours=6

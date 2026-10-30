@@ -6,35 +6,39 @@
 <main>
     <section id="login">
         <div class="container">
-            <h1>Login</h1>
+            <div class="auth-card">
+                <h1 class="section-title"><span>Login</span></h1>
+                <p class="auth-subtitle">Selamat datang kembali ke GassWatt!</p>
 
-            {% if messages %}
-                <ul>
-                    {% for message in messages %}
-                        <li>{{ message }}</li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
+                {% if messages %}
+                    <ul>
+                        {% for message in messages %}
+                            <li>{{ message }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
 
-            <form data-auth-form novalidate method="post" action="{% url 'main:login_user' %}">
-                {% csrf_token %}
+                <form data-auth-form novalidate method="post" action="{% url 'main:login_user' %}">
+                    {% csrf_token %}
 
-                <label for="identifier">Username or email</label>
-                <input type="text" id="identifier" name="identifier" autocomplete="username"
-                       required aria-describedby="identifier-error">
-                <div id="identifier-error" class="field-error" data-error-for="identifier" role="alert" hidden></div>
+                    <label for="identifier">Username atau Email</label>
+                    <input type="text" id="identifier" name="identifier" autocomplete="username"
+                           autocapitalize="none" spellcheck="false"
+                           required aria-describedby="identifier-error">
+                    <div id="identifier-error" class="field-error" data-error-for="identifier" role="alert" hidden></div>
 
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" autocomplete="current-password"
-                       required aria-describedby="password-error">
-                <div id="password-error" class="field-error" data-error-for="password" role="alert" hidden></div>
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" autocomplete="current-password"
+                           required aria-describedby="password-error">
+                    <div id="password-error" class="field-error" data-error-for="password" role="alert" hidden></div>
 
-                <div class="field-error" data-error-for="__all__" role="alert" hidden></div>
+                    <div class="field-error" data-error-for="__all__" role="alert" hidden></div>
 
-                <button type="submit">Log in</button>
-            </form>
+                    <button type="submit" class="btn-cta auth-submit">Masuk</button>
+                </form>
 
-            <p>No account yet? <a href="{% url 'main:show_register' %}">Create one</a></p>
+                <p class="auth-switch">Belum ada akun? <a href="{% url 'main:show_register' %}">Daftar</a></p>
+            </div>
         </div>
     </section>
 </main>

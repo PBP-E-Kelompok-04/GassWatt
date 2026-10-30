@@ -42,7 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // ---- Avatar ----
     const wrapper = document.getElementById("avatarWrapper");
     const input = document.getElementById("avatarInput");
-    const preview = document.getElementById("avatarPreview");
+    const preview = wrapper.querySelector(".profile-avatar");
     const avatarMsg = document.getElementById("avatarMessage");
 
     wrapper.addEventListener("click", () => input.click());
@@ -67,11 +67,11 @@ document.addEventListener("DOMContentLoaded", () => {
         input.value = "";
 
         if (data.ok) {
-            preview.src = data.url;
-            document.querySelectorAll(".profile-avatar").forEach(img => img.src = data.url);
-            showMessage(avatarMsg, true, data.message);
-        } else {
-            showMessage(avatarMsg, false, data.error || "Upload gagal.");
+        const imageUrl = data.url + "?t=" + Date.now();
+        document.querySelectorAll(".profile-avatar").forEach(img => {
+            img.src = imageUrl;
+        });
+        showMessage(avatarMsg, true, data.message);
         }
     });
 

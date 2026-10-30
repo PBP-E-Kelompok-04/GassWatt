@@ -61,7 +61,7 @@ urlpatterns = [
     # Admin portal
     path("admin-portal/", views.admin_dashboard, name="admin_dashboard"),
     path("admin-portal/pengguna/", views.kelola_pengguna, name="kelola_pengguna"),
-    path("admin-portal/<int:user_id>/delete/", views.delete_user, name="delete_user"),
+    path("admin-portal/users/<int:user_id>/delete/", views.delete_user, name="delete_user"),
     path("admin-portal/faq/", views.kelola_faq, name="kelola_faq"),
     path("admin-portal/faq/add/", views.add_faq, name="add_faq"),
     path("admin-portal/<int:faq_id>/edit/", views.edit_faq, name="edit_faq"),
@@ -72,4 +72,5 @@ urlpatterns = [
     path("profile/username/", views.update_username, name="update_username"),
     path("profile/avatar/", views.update_avatar, name="update_avatar"),
     path("profile/password/", views.change_password, name="change_password"),
+    path("admin-portal/faq/<int:faq_id>/delete/", views.delete_faq, name="delete_faq"),
 ]

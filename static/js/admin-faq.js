@@ -6,11 +6,12 @@ function toggleAnswer(id) {
     }
 
     function openModalAdd() {
+        const form = document.getElementById("addfaqForm");
+
         document.getElementById("modalTitle").innerText = "Tambah FAQ";
         document.getElementById("btnSaveText").innerText = "Simpan FAQ";
 
-        document.getElementById("faqForm").action =
-            "{% url 'main:add_faq' %}";
+        form.action = form.dataset.addUrl;
 
         document.getElementById("inputQuestion").value = "";
         document.getElementById("inputAnswer").value = "";
@@ -19,10 +20,12 @@ function toggleAnswer(id) {
     }
 
     function openModalEdit(button) {
+        const form = document.getElementById("addfaqForm");
+
         document.getElementById("modalTitle").innerText = "Edit FAQ";
         document.getElementById("btnSaveText").innerText = "Simpan Perubahan";
 
-        document.getElementById("faqForm").action = button.dataset.editUrl;
+        form.action = button.dataset.editUrl;
         document.getElementById("inputQuestion").value = button.dataset.question;
         document.getElementById("inputAnswer").value = button.dataset.answer;
 

@@ -1,10 +1,3 @@
-/* ==========================================================
-   CSS Tambahan Khusus Modul Admin Portal 
-   Mendukung & Melengkapi 'dashboard-style.css'
-   ========================================================== */
-
-/* Grid 4 Kartu Metrik Utama */
-
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;900&display=swap');
 
 
@@ -128,10 +121,18 @@
 }
 
 /* Seksi Grafik & Chart */
+.user-trend-card,
+.chart-card {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    box-sizing: border-box;
+}
+
 .user-trend-card {
-    background-color: #ffffff;      /* Mengisi background warna putih */
-    border: 1.5px solid #a3e6cd;    /* Border hijau lembut */
-    border-radius: 24px;            /* Sudut melengkung */
+    background-color: #ffffff;     
+    border: 1.5px solid #a3e6cd;    
+    border-radius: 24px;         
     padding: 24px 32px;
     width: 100%;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
@@ -195,12 +196,17 @@
 }
 
 .admin-analytics-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    z-index: 2;
-    position: relative;
+    display: grid;
+    grid-template-columns: 1.9fr 1.1fr;
+    gap: 24px;
     width: 100%;
+    align-items: stretch;
+}
+
+@media (max-width: 992px) {
+    .admin-analytics-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .admin-chart-card {
@@ -247,30 +253,52 @@
     width: 100%;
     max-width: 600px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-    box-sizing: border-box; /* Mencegah overflow */
+    box-sizing: border-box; 
+    margin: 0 auto;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 20px;
 }
 
 .chart-title {
-    font-size: 20px;
+    font-size: 16px;
     font-weight: 700;
     color: #0b4128;
+    margin: 0;
     margin-bottom: 20px;
+    white-space: nowrap;
+}
+
+.badge-realtime {
+    font-size: 12px;
+    color: #6b7280;
+    background-color: #f3f4f6;
+    padding: 3px 8px;
+    border-radius: 8px;
+    font-weight: 500;
+    margin-left: auto;
 }
 
 .chart-container {
     position: relative;
     width: 100%;
-    max-width: 260px;        /* Ukuran ring donut pas & proporsional */
+    max-width: 260px;        
     margin: 0 auto;
 }
 
-/* Legenda Donut Chart Horisontal */
+/* Legenda Donut Chart */
 .chart-legend {
     display: flex;
     flex-direction: row;
     justify-content: center;
     align-items: center;
-    flex-wrap: wrap; /* Agar aman di layar HP/kecil */
+    flex-wrap: wrap; 
     gap: 16px;
     margin-top: 20px;
     font-size: 13px;
@@ -286,10 +314,10 @@
 .color-dot {
     width: 14px;
     height: 14px;
-    border-radius: 3px;         /* Bentuk kotak tumpul persis seperti contoh */
+    border-radius: 3px;         
 }
 
-/* Warna sesuai gambar UI contoh */
+
 .color-dot.electricity { background-color: #00a82d; }  /* Hijau - Perangkat Listrik */
 .color-dot.transport { background-color: #0085d3; }    /* Biru - Transportasi */
 .color-dot.reusable { background-color: #ffb319; }     /* Oranye - Barang Reusable */
@@ -815,13 +843,13 @@
     overflow-wrap: anywhere;
 }
 
-/* 1. Kunci posisi background blur di PALING BELAKANG */
+
 .bg-blur,
 .blur-1,
 .blur-2 {
     position: absolute !important;
     z-index: 0 !important;
-    pointer-events: none; /* Mencegah blur menghalangi klik mouse */
+    pointer-events: none;
 }
 
 

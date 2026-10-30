@@ -161,8 +161,10 @@
 
             <!-- Card Kategori Emisi Terbesar -->
             <div class="chart-card">
-                <h3 class="chart-title">Kategori Emisi Terbesar</h3>
-    
+                <div class="card-header">
+                    <h3 class="chart-title">Kategori Emisi Terbesar</h3>
+                    <span class="badge-realtime">Real-time</span>
+                </div>
                 <div class="chart-container">
                     <canvas id="emisiCategoryChart"
                             data-listrik="{{ emisi_listrik|floatformat:2|default:'0' }}"

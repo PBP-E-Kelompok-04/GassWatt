@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.contrib.auth.validators import ASCIIUsernameValidator
 from django.db import models
 
 
@@ -10,8 +11,8 @@ class UserManager(BaseUserManager):
             raise ValueError("Field email harus di-set")
 
         username = extra_fields.get("username")
-        if not username or not str(username).strip():
-            raise ValueError("Field username harus di-set")
+        if username is not None and not str(username).strip():
+            extra_fields["username"] = None
 
         user = self.model(
             email=self.normalize_email(email),
@@ -34,6 +35,13 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractUser):
+    username = models.CharField(
+        max_length=20,
+        unique=True,
+        blank=True,
+        null=True,
+        validators=[ASCIIUsernameValidator()],
+    )
     email = models.EmailField(unique=True)
     pfp = models.ImageField(upload_to="pfp/", default='default.jpg')
 

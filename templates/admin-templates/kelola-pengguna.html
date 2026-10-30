@@ -25,21 +25,21 @@
         <!-- SIDEBAR -->
         <aside class="sidebar">
             <div class="brand">
-                <img src="{% static 'img/7954.svg' %}" alt="Logo" class="brand-logo">
+                <img src="{% static 'img/logo.png' %}" alt="Logo" class="brand-logo">
                 <span class="brand-name">GassWatt</span>
             </div>
 
             <nav class="sidebar-nav">
                 <a href="{% url 'main:admin_dashboard' %}" class="nav-item">
-                    <img src="{% static 'img/79169.svg' %}" alt="Dashboard">
+                    <img src="{% static 'img/layout_dashboard.png' %}" alt="Dashboard">
                     <span>Dashboard Admin</span>
                 </a>
                 <a href="{% url 'main:kelola_pengguna' %}" class="nav-item active">
-                    <img src="{% static 'img/79174.svg' %}" alt="Pengguna">
+                    <img src="{% static 'img/users_dashboard.png' %}" alt="Pengguna">
                     <span>Kelola Pengguna</span>
                 </a>
                 <a href="{% url 'main:kelola_faq' %}" class="nav-item">
-                    <img src="{% static 'img/87372.svg' %}" alt="FAQ">
+                    <img src="{% static 'img/faq_dashboard.png' %}" alt="FAQ">
                     <span>Kelola FAQ</span>
                 </a>
             </nav>
@@ -55,7 +55,7 @@
 
                 <div class="user-profile">
                     {% static 'img/87346.png' as default_avatar %}
-                    <img src="{% static 'img/foto-sofie.png' %}" 
+                    <img src="{% static 'img/87346.png' %}" 
                         alt="Avatar" 
                         class="profile-avatar" 
                         onerror="this.onerror=null; this.src='{{ default_avatar }}';">
@@ -102,8 +102,8 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for user in users|default:dummy_users %}
-                            <tr class="user-row" data-status="{{ user.status|lower }}">
+                            {% for user in users %}
+                            <tr class="user-row" id="user-row-{{ user.id }}" data-status="{{ user.status|lower }}">
                                 <td>
                                     <div class="user-cell">
                                         <div class="user-avatar-circle">
@@ -116,10 +116,10 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="role-badge">{{ user.role|default:"Pengguna" }}</span>
+                                    <span class="role-badge">{{ user.role }}</span>
                                 </td>
                                 <td>
-                                    <span class="emission-value">{{ user.total_emisi|default:"120" }} kg CO₂e</span>
+                                    <span class="emission-value">{{ user.total_emisi }} kg CO₂e</span>
                                 </td>
                                 <td>
                                     {% if user.status|lower == 'aktif' %}
@@ -129,109 +129,22 @@
                                     {% endif %}
                                 </td>
                                 <td style="text-align: center;">
+                                    {% if not user.is_self %}
                                     <button class="btn-delete" onclick="confirmDelete('{{ user.id }}', '{{ user.nama }}')">
                                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e02424" stroke-width="2">
                                             <polyline points="3 6 5 6 21 6"></polyline>
                                             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                                         </svg>
                                     </button>
+                                    {% else %}
+                                    <small style="color: #9ca3af; font-style: italic;">Akun Anda</small>
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% empty %}
-                            <!-- DUMMY DATA FALLBACK UNTUK TESTING DUMMY -->
-                            <tr class="user-row" data-status="aktif">
-                                <td>
-                                    <div class="user-cell">
-                                        <div class="user-avatar-circle">D</div>
-                                        <div class="user-details">
-                                            <span class="user-full-name">Dewi Lestari</span>
-                                            <span class="user-email">dewilestari@gmail.com</span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td><span class="role-badge">Pengguna</span></td>
-                                <td><span class="emission-value">210 kg CO₂e</span></td>
-                                <td><span class="status-badge status-active">Aktif</span></td>
-                                <td style="text-align: center;">
-                                    <button class="btn-delete" onclick="confirmDelete('1', 'Dewi Lestari')">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e02424" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr class="user-row" data-status="inaktif">
-                                <td>
-                                    <div class="user-cell">
-                                        <div class="user-avatar-circle">B</div>
-                                        <div class="user-details">
-                                            <span class="user-full-name">Budi Pratama</span>
-                                            <span class="user-email">budipratama@gmail.com</span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td><span class="role-badge">Pengguna</span></td>
-                                <td><span class="emission-value">95 kg CO₂e</span></td>
-                                <td><span class="status-badge status-inactive">Inaktif</span></td>
-                                <td style="text-align: center;">
-                                    <button class="btn-delete" onclick="confirmDelete('2', 'Budi Pratama')">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e02424" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr class="user-row" data-status="aktif">
-                                <td>
-                                    <div class="user-cell">
-                                        <div class="user-avatar-circle">H</div>
-                                        <div class="user-details">
-                                            <span class="user-full-name">Hannah</span>
-                                            <span class="user-email">hannah@gmail.com</span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td><span class="role-badge">Pengguna</span></td>
-                                <td><span class="emission-value">150 kg CO₂e</span></td>
-                                <td><span class="status-badge status-active">Aktif</span></td>
-                                <td style="text-align: center;">
-                                    <button class="btn-delete" onclick="confirmDelete('3', 'Hannah')">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e02424" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr class="user-row" data-status="aktif">
-                                <td>
-                                    <div class="user-cell">
-                                        <div class="user-avatar-circle">A</div>
-                                        <div class="user-details">
-                                            <span class="user-full-name">Ahmad Rizki</span>
-                                            <span class="user-email">ahmadrizki@gmail.com</span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td><span class="role-badge">Pengguna</span></td>
-                                <td><span class="emission-value">85 kg CO₂e</span></td>
-                                <td><span class="status-badge status-active">Aktif</span></td>
-                                <td style="text-align: center;">
-                                    <button class="btn-delete" onclick="confirmDelete('4', 'Ahmad Rizki')">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e02424" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr class="user-row" data-status="aktif">
-                                <td>
-                                    <div class="user-cell">
-                                        <div class="user-avatar-circle">N</div>
-                                        <div class="user-details">
-                                            <span class="user-full-name">Nur Siti</span>
-                                            <span class="user-email">nursiti@gmail.com</span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td><span class="role-badge">Pengguna</span></td>
-                                <td><span class="emission-value">120 kg CO₂e</span></td>
-                                <td><span class="status-badge status-active">Aktif</span></td>
-                                <td style="text-align: center;">
-                                    <button class="btn-delete" onclick="confirmDelete('5', 'Nur Siti')">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e02424" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                    </button>
+                            <tr>
+                                <td colspan="5" style="text-align: center; padding: 24px; color: #6b7280;">
+                                    Belum ada pengguna terdaftar di database.
                                 </td>
                             </tr>
                             {% endfor %}
@@ -241,12 +154,9 @@
 
                 <!-- FOOTER TABLE & PAGINATION -->
                 <div class="table-footer">
-                    <p class="summary-text">Menampilkan <strong>5</strong> dari <strong>5</strong> pengguna</p>
-                    <div class="pagination">
-                        <button class="page-btn disabled">Previous</button>
-                        <button class="page-btn active">1</button>
-                        <button class="page-btn disabled">Next</button>
-                    </div>
+                    <p class="summary-text">
+                        Menampilkan <strong>{{ total_count }}</strong> dari <strong>{{ total_count }}</strong> pengguna
+                    </p>
                 </div>
             </section>
         </main>
@@ -264,45 +174,7 @@
         </div>
     </div>
 
-    <!-- SCRIPT INTERAKTIF FILTER & SEARCH -->
-    <script>
-        let selectedUserId = null;
-
-        function filterTable() {
-            const searchValue = document.getElementById('searchInput').value.toLowerCase();
-            const filterValue = document.getElementById('statusFilter').value;
-            const rows = document.querySelectorAll('.user-row');
-
-            rows.forEach(row => {
-                const text = row.innerText.toLowerCase();
-                const status = row.getAttribute('data-status');
-
-                const matchesSearch = text.includes(searchValue);
-                const matchesStatus = (filterValue === 'all') || (status === filterValue);
-
-                if (matchesSearch && matchesStatus) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        }
-
-        function confirmDelete(id, name) {
-            selectedUserId = id;
-            document.getElementById('deleteUserName').innerText = name;
-            document.getElementById('deleteModal').classList.add('active');
-        }
-
-        function closeModal() {
-            document.getElementById('deleteModal').classList.remove('active');
-        }
-
-        function executeDelete() {
-            alert('Pengguna berhasil dihapus!');
-            closeModal();
-            // Nanti di Django, kamu bisa kirim fetch / AJAX delete request ke backend
-        }
-    </script>
+    <script src="{% static 'js/admin-pengguna.js' %}"></script>
+           
 </body>
 </html>

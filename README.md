@@ -115,6 +115,10 @@ python manage.py test
 | 1 | Penyusunan dan perapian README | AI assistant menggunakan Copilot SDK di VS Code | Membantu menyusun dokumentasi berdasarkan struktur dan informasi proyek yang tersedia. Penggunaan AI ini terbatas pada README dan tidak menyatakan bahwa implementasi aplikasi dibuat oleh AI. |
 | 2 | Dasar Perhitungan Emisi | Gemini AI | Membantu membuat dasar perhitungan untuk emisi seperti untuk setiap moda transportasi memiliki rata-rata emisi yang dihasilkan per-km dan perhitungan eco-score.
 | 3 | Cara Menggunakan Chart.js | Gemini AI | Membantu mengarahkan penggunaan chart.jas untuk perhitungan emisi seminggu dengan konteks terkait.
+| 4 | Implementasi Pengambilan Data dari API dan Penerapan Cache | Gemini AI | Membantu dalam menerapkan pengambilan data cuaca melalui API Open-Meteo serta penerapan mekanisme caching untuk mengurangi permintaan data berulang.
+| 5 | Implementasi Pencarian Lokasi | Gemini AI | Membantu dalam mengimplementasikan Geocoding Open-Meteo untuk pencarian lokasi dan pengambilan koordinat melalui GPS.
+| 6 | Implementasi Survey Barang Reusable | Chat GPT | Membantu menyusun rancangan interaksi AJAX di sisi klien, rumus perhitungan emisi (jumlah × frekuensi pemakaian per minggu × faktor emisi ÷ 7).  
+| 7 | Pengembangan Fitur Publik (Home, About, FAQ) | Chat GPT | Membantu menerjemahkan desain Figma, serta membantu menyelesaikan konflik Git dan kendala deployment ke PWS.  
 
 ## Referensi
 

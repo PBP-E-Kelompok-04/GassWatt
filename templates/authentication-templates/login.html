@@ -1,4 +1,5 @@
 {% extends 'main-templates/homepage-base.html' %}
+{% load static %}
 {% block title %}GassWatt - Login{% endblock title %}
 {% block body_class %}page-login{% endblock body_class %}
 {% block content %}
@@ -15,20 +16,27 @@
                 </ul>
             {% endif %}
 
-            <form method="post" action="{% url 'login_user' %}">
+            <form data-auth-form novalidate method="post" action="{% url 'main:login_user' %}">
                 {% csrf_token %}
 
-                <label for="identifier">Username</label>
-                <input type="text" id="identifier" name="identifier" required>
+                <label for="identifier">Username or email</label>
+                <input type="text" id="identifier" name="identifier" autocomplete="username"
+                       required aria-describedby="identifier-error">
+                <div id="identifier-error" class="field-error" data-error-for="identifier" role="alert" hidden></div>
 
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
+                <input type="password" id="password" name="password" autocomplete="current-password"
+                       required aria-describedby="password-error">
+                <div id="password-error" class="field-error" data-error-for="password" role="alert" hidden></div>
+
+                <div class="field-error" data-error-for="__all__" role="alert" hidden></div>
 
                 <button type="submit">Log in</button>
             </form>
 
-            <p>No account yet? <a href="{% url 'show_register' %}">Create one</a></p>
+            <p>No account yet? <a href="{% url 'main:show_register' %}">Create one</a></p>
         </div>
     </section>
 </main>
+<script src="{% static 'js/auth.js' %}" defer></script>
 {% endblock content %}

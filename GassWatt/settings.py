@@ -45,7 +45,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'main',
-    'authentication'
 ]
 
 MIDDLEWARE = [
@@ -78,7 +77,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'GassWatt.wsgi.application'
 
-LOGIN_URL = "show_login"
+LOGIN_URL = "main:show_login"
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -125,13 +124,15 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+AUTH_USER_MODEL = "main.User"
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'id'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "Asia/Jakarta"
 
 USE_I18N = True
 

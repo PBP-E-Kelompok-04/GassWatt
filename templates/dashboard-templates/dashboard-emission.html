@@ -37,7 +37,7 @@
             <img src="{% static 'img/Speedometer.png' %}" alt="gambar Speedometer" class="summary-icon">
             <div>
                 <p>Eco Score (Weekly)</p>
-                <h2>{{ eco_score }}/100</h2>
+                <h2>{% if eco_score is not None %}{{ eco_score }}/100{% else %}Belum ada data{% endif %}</h2>
             </div>
         </article>
         

@@ -9,7 +9,7 @@
     <div class="dashboard-content">
         <!-- Welcome Section -->
         <div class="welcome-section">
-            <span class="greeting-tag">Halo, Hannah! 👋</span>
+            <span class="greeting-tag">Halo, {{ request.user.get_full_name|default:request.user.username }}! 👋</span>
             <h1 class="welcome-title">Mari lihat dampak baikmu hari ini.</h1>
         </div>
 
@@ -48,7 +48,9 @@
                             <span class="metric-target-goal">dari {{ target_data.target_goal_pct }}%</span>
                         </p>
                         <span class="metric-target-status">
-                            {% if target_data.is_achieved %}
+                            {% if not target_data.has_baseline %}
+                                Menunggu data minggu lalu
+                            {% elif target_data.is_achieved %}
                                 Completed
                             {% else %}
                                 On Progress

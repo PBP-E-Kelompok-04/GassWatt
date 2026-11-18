@@ -50,6 +50,24 @@ class TransportationSurveyFlowTests(TestCase):
         self.assertContains(response, 'name="daily_distance_km"')
         self.assertContains(response, 'data-list-url="/dashboard/survey/transport/list/"')
 
+    def test_emission_chart_api_returns_last_seven_days(self):
+        today = timezone.now().date()
+        for days_ago in range(6, -1, -1):
+            DailyEmissionLog.objects.create(
+                user=self.user,
+                date=today - timedelta(days=days_ago),
+                total_emission_co2=days_ago,
+            )
+
+        with patch("main.views.api_views._sync_daily_emission_logs"):
+            response = self.client.get(reverse("api:emission-chart"))
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["status"], "success")
+        self.assertEqual(len(data["labels"]), 7)
+        self.assertEqual(data["datasets"][0]["data"], [6, 5, 4, 3, 2, 1, 0])
+
     def test_transport_survey_crud_and_list(self):
         add_response = self.client.post(
             reverse("main:add_transport_survey"),

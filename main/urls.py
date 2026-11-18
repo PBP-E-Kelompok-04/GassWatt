@@ -4,6 +4,7 @@ from django.conf.urls.static import static
 
 
 from . import views
+from .views import api_views
 
 app_name = "main"
 
@@ -46,7 +47,7 @@ urlpatterns = [
     path("dashboard/survey/reusable/delete/<uuid:survey_id>/", views.delete_reusable_survey, name="delete_reusable_survey"),
 
     # Charts API
-    path("api/emission-chart/", views.emission_chart_api, name="api_emission_chart"),
+    path("api/emission-chart/", api_views.emission_chart, name="api_emission_chart"),
     path("api/daily-energy-chart/", views.daily_energy_chart_api, name="daily_energy_chart_api"),
 
     # Weather / locations API

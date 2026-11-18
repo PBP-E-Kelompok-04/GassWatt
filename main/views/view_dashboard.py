@@ -331,36 +331,6 @@ def emission_dashboard(request):
     return render(request, 'dashboard-templates/dashboard-emission.html', context)
 
 @login_required
-def emission_chart_api(request):
-    user = request.user
-    _sync_daily_emission_logs(user)
-
-    today = timezone.now().date()
-    chart_dates = []
-    chart_values = []
-    day_names = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']
-
-    for i in range(6, -1, -1):
-        target_date = today - timedelta(days=i)
-        log = DailyEmissionLog.objects.filter(user=user, date=target_date).first()
-        val = float(log.total_emission_co2) if log else 0.0
-
-        label = f"{day_names[target_date.weekday()]} ({target_date.day})"
-        chart_dates.append(label)
-        chart_values.append(val)
-
-    return JsonResponse({
-        'status': 'success',
-        'labels': chart_dates,
-        'datasets': [
-            {
-                'label': 'Jejak Karbon (kg CO2e)',
-                'data': chart_values,
-            }
-        ]
-    })
-
-@login_required
 def daily_energy_chart_api(request):
     user = request.user
 

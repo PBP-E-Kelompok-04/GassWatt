@@ -1,16 +1,52 @@
+from datetime import timedelta
+
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import status
-from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import (
-    api_view, authentication_classes, permission_classes,
+    api_view, permission_classes,
 )
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from main.views.view_dashboard import _sync_daily_emission_logs
-from main.models import TransportationSurvey
+from main.models import DailyEmissionLog, TransportationSurvey
 # from main.permissions import IsPortfolioOwnerOrReadOnly
 from main.serializers import TransportationSurveySerializer
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def emission_chart(request):
+    _sync_daily_emission_logs(request.user)
+
+    today = timezone.now().date()
+    labels = []
+    values = []
+    day_names = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"]
+
+    for days_ago in range(6, -1, -1):
+        target_date = today - timedelta(days=days_ago)
+        log = DailyEmissionLog.objects.filter(
+            user=request.user,
+            date=target_date,
+        ).first()
+        values.append(float(log.total_emission_co2) if log else 0.0)
+        labels.append(
+            f"{day_names[target_date.weekday()]} ({target_date.day})"
+        )
+
+    return Response({
+        "status": "success",
+        "labels": labels,
+        "datasets": [
+            {
+                "label": "Jejak Karbon (kg CO2e)",
+                "data": values,
+            }
+        ],
+    })
+
 
 @api_view(["GET", "HEAD", "POST"])
 @permission_classes([IsAuthenticated])

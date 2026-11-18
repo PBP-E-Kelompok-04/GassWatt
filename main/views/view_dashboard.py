@@ -94,9 +94,15 @@ def show_dashboard(request):
                 f"Penggunaan {mode_display} dengan jarak {dist} km tergolong dekat. Berjalan kaki atau bersepeda bisa menghemat 100% emisi harianmu ({co2:.2f} kg CO₂e)."
             )
         elif dist > 10.0 and mode not in ['krl_mrt_lrt', 'busway']:
-            recommendations.append(
-                f"Perjalanan sejauh {dist} km menggunakan {mode_display} menghasilkan emisi cukup tinggi ({co2:.2f} kg CO₂e). Coba beralih ke KRL, MRT, atau Busway untuk menekan emisi."
-            )
+            if mode == "walk_bike":
+                recommendations.append(
+                    f"Penggunaan {mode_display} sejauh {dist} Km sudah sangat membantu mengurangi emisi. Lanjutkan perjuanganmu mengurangi emisi! "
+                )
+            else:
+                recommendations.append(
+                    f"Perjalanan sejauh {dist} km menggunakan {mode_display} menghasilkan emisi cukup tinggi ({co2:.2f} kg CO₂e). Coba beralih ke KRL, MRT, atau Busway untuk menekan emisi."
+                )
+            
         elif mode in ['motor_ice', 'car_ice']:
             vehicle_type = "Motor" if mode == 'motor_ice' else "Mobil"
             recommendations.append(

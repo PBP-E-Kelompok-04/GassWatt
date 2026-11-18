@@ -6,3 +6,4 @@ whitenoise
 requests>=2.31,<3
 Pillow
 tzdata
+djangorestframework~=3.18.3

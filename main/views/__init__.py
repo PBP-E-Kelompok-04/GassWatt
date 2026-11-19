@@ -14,6 +14,7 @@ from .view_auth import (
 )
 from .view_dashboard import (
     get_weekly_target_summary,
+    get_dashboard_recommendations,
     show_dashboard,
     show_dashboard_weather,
     _sync_daily_emission_logs,

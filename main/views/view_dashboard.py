@@ -63,14 +63,9 @@ def get_weekly_target_summary(user, target_goal_pct=10.0):
         'has_baseline': has_baseline,
     }
 
-@login_required
-@require_GET
-def show_dashboard(request):
-    recommendations = []
-    today = timezone.now().date()
 
-    _sync_daily_emission_logs(request.user)
-    target_weekly = get_weekly_target_summary(request.user)
+def get_dashboard_recommendations(user, target_weekly):
+    recommendations = []
 
     if not target_weekly["has_baseline"]:
         recommendations.append("Belum ada data emisi minggu lalu untuk menghitung progres target.")
@@ -81,7 +76,7 @@ def show_dashboard(request):
     else:
         recommendations.append("Emisi masih lebih tinggi dari minggu lalu. Coba gunakan transportasi umum.")
 
-    transportation_survey = TransportationSurvey.objects.filter(user=request.user)
+    transportation_survey = TransportationSurvey.objects.filter(user=user)
 
     for transport in transportation_survey:
         mode = transport.transport_mode
@@ -102,14 +97,14 @@ def show_dashboard(request):
                 recommendations.append(
                     f"Perjalanan sejauh {dist} km menggunakan {mode_display} menghasilkan emisi cukup tinggi ({co2:.2f} kg CO₂e). Coba beralih ke KRL, MRT, atau Busway untuk menekan emisi."
                 )
-            
+
         elif mode in ['motor_ice', 'car_ice']:
             vehicle_type = "Motor" if mode == 'motor_ice' else "Mobil"
             recommendations.append(
                 f"Kamu menggunakan {vehicle_type} bensin. Beralih ke {vehicle_type} listrik (EV) dapat memotong emisi harianmu hingga 60%."
             )
 
-    electricity_survey = ElectricitySurvey.objects.filter(user=request.user)
+    electricity_survey = ElectricitySurvey.objects.filter(user=user)
 
     for electric in electricity_survey:
         device_type = electric.device_type
@@ -135,7 +130,7 @@ def show_dashboard(request):
                 f"{label} menyala selama {hours} jam/hari. Mengurangi durasi pemakaian 1-2 jam sehari dapat menekan emisi harianmu."
             )
 
-    reusable_survey = ReusableItemSurvey.objects.filter(user=request.user)
+    reusable_survey = ReusableItemSurvey.objects.filter(user=user)
 
     for item in reusable_survey:
         item_display = item.get_item_type_display()
@@ -156,6 +151,17 @@ def show_dashboard(request):
             "Kamu belum menggunakan Barang Reusable sama sekali. Gunakan Barang Reusable supaya membantu mengurangi emisi yang kamu hasilkan"
         )
 
+    return recommendations
+
+
+@login_required
+@require_GET
+def show_dashboard(request):
+    today = timezone.now().date()
+
+    _sync_daily_emission_logs(request.user)
+    target_weekly = get_weekly_target_summary(request.user)
+
     today_kwh = float(ElectricitySurvey.objects.filter(user=request.user, created_at__date=today)
                                                .aggregate(total=Sum('daily_consumption_kwh'))['total'] or 0)
 
@@ -174,8 +180,7 @@ def show_dashboard(request):
 
     context = {
         'target_data': target_weekly,
-        'recommendations': recommendations,
-        'today_kwh': today_kwh
+        'today_kwh': today_kwh,
     }
     return render(request, "dashboard-templates/dashboard.html", context)
 
@@ -225,13 +230,8 @@ def _sync_daily_emission_logs(user):
             )
             start_date += timedelta(days=1)
 
-@login_required
-@require_GET
-def emission_dashboard(request):
-    user = request.user
 
-    _sync_daily_emission_logs(user)
-
+def get_emission_dashboard_data(user):
     today = timezone.now().date()
     seven_days_ago = today - timedelta(days=6)
 
@@ -316,19 +316,48 @@ def emission_dashboard(request):
     )
     avoided_km_7days = daily_eco_distance * 7.0
 
-    context = {
-        'today_emission': round(today_emission, 2),
-        'total_7days_emission': round(total_7days_emission, 2),
-        'co2_saved': round(co2_saved_7days, 2),
-        'eco_score': eco_score,
-        'trees_saved': trees_saved,
-        'avoided_km': round(avoided_km_7days, 2),
-        'transport_emission_today': round(transport_daily, 2),
-        'electricity_emission_today': round(electricity_daily, 2),
-        'reusable_emission_saved_today': round(reusable_daily, 2),
+    day_names = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']
+    chart_labels = []
+    chart_values = []
+    for days_ago in range(6, -1, -1):
+        target_date = today - timedelta(days=days_ago)
+        log = DailyEmissionLog.objects.filter(
+            user=user,
+            date=target_date,
+        ).first()
+        chart_values.append(float(log.total_emission_co2) if log else 0.0)
+        chart_labels.append(
+            f"{day_names[target_date.weekday()]} ({target_date.day})"
+        )
+
+    return {
+        'metrics': {
+            'today_emission': round(today_emission, 2),
+            'total_7days_emission': round(total_7days_emission, 2),
+            'co2_saved': round(co2_saved_7days, 2),
+            'eco_score': eco_score,
+            'trees_saved': trees_saved,
+            'avoided_km': round(avoided_km_7days, 2),
+            'transport_emission_today': round(transport_daily, 2),
+            'electricity_emission_today': round(electricity_daily, 2),
+            'reusable_emission_saved_today': round(reusable_daily, 2),
+        },
+        'chart_labels': chart_labels,
+        'chart_values': chart_values,
     }
 
-    return render(request, 'dashboard-templates/dashboard-emission.html', context)
+
+@login_required
+@require_GET
+def emission_dashboard(request):
+    _sync_daily_emission_logs(request.user)
+    emission_data = get_emission_dashboard_data(request.user)
+
+    return render(
+        request,
+        'dashboard-templates/dashboard-emission.html',
+        emission_data['metrics'],
+    )
 
 @login_required
 def daily_energy_chart_api(request):

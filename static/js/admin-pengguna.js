@@ -49,7 +49,7 @@ function closeModal() {
 function executeDelete() {
     if (!selectedUserId) return;
 
-    fetch(`/kelola-pengguna/delete/${selectedUserId}/`, {
+    fetch(`/admin-portal/users/${selectedUserId}/delete/`, {
         method: 'POST',
         headers: {
             'X-CSRFToken': getCookie('csrftoken'),

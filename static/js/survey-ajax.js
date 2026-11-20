@@ -1,8 +1,8 @@
 const surveyConfig = document.getElementById('surveyConfig');
-const BASE_SURVEY_ENDPOINT = surveyConfig.dataset.listUrl;
-const ADD_SURVEY_ENDPOINT = surveyConfig.dataset.addUrl;
-const UPDATE_SURVEY_URL = surveyConfig.dataset.editUrlTemplate;
-const DELETE_SURVEY_URL = surveyConfig.dataset.deleteUrlTemplate;
+const BASE_SURVEY_ENDPOINT = surveyConfig.dataset.apiListUrl || surveyConfig.dataset.listUrl;
+const ADD_SURVEY_ENDPOINT = surveyConfig.dataset.apiListUrl || surveyConfig.dataset.addUrl;
+const UPDATE_SURVEY_URL = surveyConfig.dataset.apiEditUrlTemplate || surveyConfig.dataset.editUrlTemplate;
+const DELETE_SURVEY_URL = surveyConfig.dataset.apiDeleteUrlTemplate || surveyConfig.dataset.deleteUrlTemplate;
 
 let surveyAbortController;
 let activeDeleteId = null;
@@ -74,8 +74,8 @@ function buildSurveyRowElement(item) {
     const tr = document.createElement('tr');
     tr.setAttribute('data-id', item.id);
 
-    const safeMode = escapeHtml(item.mode);
-    const safeDistance = escapeHtml(item.distance);
+    const safeMode = escapeHtml(item.transport_mode_display);
+    const safeDistance = escapeHtml(item.daily_distance_km);
     const formattedEmission = Number(item.daily_emission_co2 || 0).toFixed(2).replace('.', ',');
 
     tr.innerHTML = `
@@ -155,8 +155,8 @@ function openEditSurveyModal(item) {
     if (!surveyForm) return;
 
     document.getElementById('surveyId').value = item.id;
-    if (surveyForm.elements.namedItem('transport_mode')) surveyForm.elements.namedItem('transport_mode').value = item.mode_val;
-    if (surveyForm.elements.namedItem('daily_distance_km')) surveyForm.elements.namedItem('daily_distance_km').value = item.distance;
+    if (surveyForm.elements.namedItem('transport_mode')) surveyForm.elements.namedItem('transport_mode').value = item.transport_mode;
+    if (surveyForm.elements.namedItem('daily_distance_km')) surveyForm.elements.namedItem('daily_distance_km').value = item.daily_distance_km;
     if (surveyForm.elements.namedItem('notes')) surveyForm.elements.namedItem('notes').value = item.notes;
 
     document.getElementById('modalTitle').textContent = 'Edit Transportasi';
@@ -183,14 +183,20 @@ async function handleSurveySubmit(event) {
         : ADD_SURVEY_ENDPOINT;
 
     try {
+        const fields = new FormData(surveyForm);
+        const payload = {
+            transport_mode: fields.get('transport_mode'),
+            daily_distance_km: fields.get('daily_distance_km'),
+            notes: fields.get('notes') || '',
+        };
         const response = await fetch(targetUrl, {
-            method: 'POST',
+            method: surveyId ? 'PATCH' : 'POST',
             headers: {
                 'X-CSRFToken': getCookie('csrftoken'),
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
             },
-            body: new FormData(surveyForm)
+            body: JSON.stringify(payload),
         });
 
         const result = await response.json().catch(() => ({}));
@@ -222,10 +228,9 @@ async function executeDeleteAjax(event) {
 
     try {
         const response = await fetch(targetUrl, {
-            method: 'POST',
+            method: 'DELETE',
             headers: {
                 'X-CSRFToken': getCookie('csrftoken'),
-                'X-Requested-With': 'XMLHttpRequest',
                 'Accept': 'application/json'
             }
         });

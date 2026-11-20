@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const ctx = chartCanvas.getContext('2d');
 
-    fetch("{% url 'main:api_emission_chart' %}")
+    fetch("{% url 'api:emission-chart' %}")
         .then(res => {
             if (!res.ok) throw new Error("Gagal mengambil data dari API");
             return res.json();

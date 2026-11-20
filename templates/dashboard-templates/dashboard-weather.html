@@ -13,13 +13,13 @@
     <section
         id="weather-page"
         class="welcome-section"
-        data-search-url="{% url 'main:search_location_api' %}"
-        data-weather-url="{% url 'main:fetch_weather_api' %}"
-        data-list-url="{% url 'main:list_locations' %}"
-        data-save-url="{% url 'main:save_location' %}"
-        data-update-url-template="{% url 'main:update_location' 999999 %}"
-        data-activate-url-template="{% url 'main:activate_location' 999999 %}"
-        data-delete-url-template="{% url 'main:delete_location' 999999 %}"
+        data-search-url="{% url 'api:weather-search' %}"
+        data-weather-url="{% url 'api:weather-current' %}"
+        data-list-url="{% url 'api:weather-location-list' %}"
+        data-save-url="{% url 'api:weather-location-list' %}"
+        data-update-url-template="{% url 'api:weather-location-detail' 999999 %}"
+        data-activate-url-template="{% url 'api:weather-location-activate' 999999 %}"
+        data-delete-url-template="{% url 'api:weather-location-detail' 999999 %}"
         data-authenticated="{{ request.user.is_authenticated|yesno:'true,false' }}">
         
         <h2>Weather</h2>

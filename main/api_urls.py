@@ -15,4 +15,10 @@ urlpatterns = [
     path("reusable/<uuid:survey_id>/", api_views.reusable_detail, name="reusable-detail"),
     path("faq/", api_views.faq_list, name="faq-list"),
     path("faq/<int:faq_id>/", api_views.faq_detail, name="faq-detail"),
+
+    path("weather/search/", api_views.weather_search, name="weather-search"),
+    path("weather/current/", api_views.weather_current, name="weather-current"),
+    path("weather/locations/", api_views.weather_location_list, name="weather-location-list"),
+    path("weather/locations/<int:location_id>/", api_views.weather_location_detail, name="weather-location-detail"),
+    path("weather/locations/<int:location_id>/activate/", api_views.weather_location_activate, name="weather-location-activate"),
 ]

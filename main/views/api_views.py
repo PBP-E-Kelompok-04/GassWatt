@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+import math
 from rest_framework import status
 from rest_framework.decorators import (
     api_view, permission_classes,
@@ -12,11 +13,13 @@ from main.views.view_dashboard import (
     get_emission_dashboard_data,
     get_weekly_target_summary,
 )
+
 from main.models import (
     TransportationSurvey,
     ElectricitySurvey,
     ReusableItemSurvey,
     FAQ,
+    SavedLocation
 )
 # from main.permissions import IsPortfolioOwnerOrReadOnly
 from main.serializers import (
@@ -24,8 +27,10 @@ from main.serializers import (
     ElectricitySurveySerializer,
     ReusableSurveySerializer,
     FAQSerializer,
+    SavedLocationSerializer
 )
 
+from main.weather_logic import WeatherServiceError, search_locations, get_weather
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -166,6 +171,7 @@ def transportation_detail(request, survey_id):
             status=status.HTTP_200_OK,
         )
 
+
 @api_view(["GET", "HEAD", "POST"])
 @permission_classes([IsAuthenticated])
 def electricity_list(request):
@@ -253,7 +259,7 @@ def electricity_detail(request, survey_id):
 @permission_classes([IsAuthenticated])
 def reusable_list(request):
     if request.method in ("GET", "HEAD"):
-        surveys = ReusableSurvey.objects.filter(
+        surveys = ReusableItemSurvey.objects.filter(
             user=request.user
         ).order_by("-created_at")
 
@@ -287,7 +293,7 @@ def reusable_list(request):
 @permission_classes([IsAuthenticated])
 def reusable_detail(request, survey_id):
     survey = get_object_or_404(
-        ReusableSurvey,
+        ReusableItemSurvey,
         id=survey_id,
         user=request.user,
     )
@@ -429,3 +435,108 @@ def faq_detail(request, faq_id):
             },
             status=status.HTTP_200_OK,
         )
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def weather_search(request):
+    query = request.query_params.get("q", "").strip()
+    if len(query) < 2:
+        return Response({"results": []})
+    if len(query) > 100:
+        return Response({"error": "Pencarian maksimal 100 karakter."}, status=400)
+    try:
+        return Response({"results": search_locations(query)})
+    except WeatherServiceError:
+        return Response({"error": "Pencarian lokasi sementara gagal."}, status=502)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def weather_current(request):
+    try:
+        lat = float(request.query_params.get("lat", ""))
+        lon = float(request.query_params.get("lon", ""))
+    except (ValueError, TypeError):
+        return Response({"error": "Koordinat tidak valid."}, status=400)
+
+    if not math.isfinite(lat) or not math.isfinite(lon) or not (-90 <= lat <= 90 and -180 <= lon <= 180):
+        return Response({"error": "Koordinat di luar rentang yang valid."}, status=400)
+
+    try:
+        return Response(get_weather(lat, lon))
+    except WeatherServiceError:
+        return Response({"error": "Gagal mengambil cuaca dari Open-Meteo. Coba lagi."}, status=502)
+
+
+@api_view(["GET", "HEAD", "POST"])
+@permission_classes([IsAuthenticated])
+def weather_location_list(request):
+    if request.method in ("GET", "HEAD"):
+        locations = SavedLocation.objects.filter(user=request.user)
+        return Response({"results": SavedLocationSerializer(locations, many=True).data})
+
+    serializer = SavedLocationSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    values = serializer.validated_data
+    location = SavedLocation.objects.filter(
+        user=request.user,
+        latitude=values["latitude"],
+        longitude=values["longitude"],
+    ).first()
+    created = location is None
+
+    SavedLocation.objects.filter(
+        user=request.user, is_active=True
+    ).update(is_active=False)
+
+    if created:
+        location = serializer.save(user=request.user, is_active=True)
+    else:
+        location.name = values["name"]
+        location.is_active = True
+        location.save(update_fields=["name", "is_active"])
+
+    return Response({
+        "status": "success", "created": created,
+        "location": SavedLocationSerializer(location).data,
+    }, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
+@api_view(["GET", "HEAD", "PUT", "PATCH", "DELETE"])
+@permission_classes([IsAuthenticated])
+def weather_location_detail(request, location_id):
+    location = get_object_or_404(SavedLocation, pk=location_id, user=request.user)
+    if request.method in ("GET", "HEAD"):
+        return Response(SavedLocationSerializer(location).data)
+    if request.method == "DELETE":
+        location.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    if set(request.data.keys()) != {"name"}:
+        return Response({"error": "Hanya nama lokasi yang boleh diubah."}, status=400)
+
+    serializer = SavedLocationSerializer(
+        location, data=request.data, partial=True
+    )
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response({"status": "success", "location": SavedLocationSerializer(location).data})
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def weather_location_activate(request, location_id):
+    location = get_object_or_404(
+        SavedLocation, pk=location_id, user=request.user
+    )
+
+    if request.method == "GET":
+        return Response(SavedLocationSerializer(location).data)
+    
+    SavedLocation.objects.filter(
+        user=request.user, is_active=True
+    ).exclude(pk=location.pk).update(is_active=False)
+
+    location.is_active = True
+    location.save(update_fields=["is_active"])
+    return Response({"status": "success", "location": SavedLocationSerializer(location).data})

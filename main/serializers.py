@@ -1,7 +1,7 @@
 from django.utils.html import strip_tags
 from rest_framework import serializers
 
-from main.models import TransportationSurvey, ElectricitySurvey, ReusableItemSurvey, FAQ
+from main.models import TransportationSurvey, ElectricitySurvey, ReusableItemSurvey, FAQ, SavedLocation
 
 
 class TransportationSurveySerializer(serializers.ModelSerializer):
@@ -104,3 +104,26 @@ class FAQSerializer(serializers.ModelSerializer):
             "order",
         ]
         read_only_fields = fields
+
+class SavedLocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SavedLocation
+        fields = [
+            'id', 'name', 'latitude', 'longitude', 
+            'is_active', 'created_at'
+        ]
+        read_only_fields = [
+            'id', 'is_active', 'created_at'
+        ]
+
+        def validate_name(self, value):
+            value = strip_tags(value).strip()
+            if not value:
+                raise serializers.ValidationError('Nama lokasi wajib diisi.')
+            return value
+
+        def validate_latitude(self, value):
+            return round(value, 6)
+
+        def validate_longitude(self, value):
+            return round(value, 6)

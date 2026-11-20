@@ -14,5 +14,5 @@ urlpatterns = [
     path("reusable/", api_views.reusable_list, name="reusable-list"),
     path("reusable/<uuid:survey_id>/", api_views.reusable_detail, name="reusable-detail"),
     path("faq/", api_views.faq_list, name="faq-list"),
-    path("faq/<uuid:faq_id>/", api_views.faq_detail, name="faq-detail"),
+    path("faq/<int:faq_id>/", api_views.faq_detail, name="faq-detail"),
 ]

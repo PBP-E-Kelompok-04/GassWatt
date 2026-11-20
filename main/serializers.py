@@ -62,7 +62,7 @@ class ElectricitySurveySerializer(serializers.ModelSerializer):
             "created_at",
         ]
     
-    def validete_notes(self, value):
+    def validate_notes(self, value):
         return strip_tags(value) if value else value
 
 class ReusableSurveySerializer(serializers.ModelSerializer):
@@ -79,7 +79,7 @@ class ReusableSurveySerializer(serializers.ModelSerializer):
             "item_type",
             "item_type_display",
             "quantity",
-            "user_per_week",
+            "uses_per_week",
             "notes",
             "daily_emission_co2",
             "created_at",
@@ -91,7 +91,7 @@ class ReusableSurveySerializer(serializers.ModelSerializer):
             "created_at",
         ]
     
-    def validete_notes(self, value):
+    def validate_notes(self, value):
         return strip_tags(value) if value else value
 
 class FAQSerializer(serializers.ModelSerializer):

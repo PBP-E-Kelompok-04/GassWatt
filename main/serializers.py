@@ -1,5 +1,6 @@
 from django.utils.html import strip_tags
 from rest_framework import serializers
+from django.contrib.auth.models import User
 
 from main.models import TransportationSurvey, ElectricitySurvey, ReusableItemSurvey, FAQ, SavedLocation
 
@@ -127,3 +128,50 @@ class SavedLocationSerializer(serializers.ModelSerializer):
 
         def validate_longitude(self, value):
             return round(value, 6)
+
+
+class AdminUserSerializer(serializers.ModelSerializer):
+    role = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "username",
+            "email",
+            "is_active",
+            "is_superuser",
+            "role",
+            "date_joined",
+        ]
+        read_only_fields = fields
+
+    def get_role(self, obj):
+        return "Admin" if obj.is_superuser or obj.is_staff else "Pengguna"
+
+
+class AdminFAQSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FAQ
+        fields = [
+            "id",
+            "question",
+            "answer",
+            "order",
+            "is_active",
+        ]
+        read_only_fields = ["id"]
+
+    def validate_question(self, value):
+        value = strip_tags(value).strip()
+        if not value:
+            raise serializers.ValidationError("Pertanyaan wajib diisi.")
+        if len(value) > 250:
+            raise serializers.ValidationError("Pertanyaan maksimal 250 karakter.")
+        return value
+
+    def validate_answer(self, value):
+        value = strip_tags(value).strip()
+        if not value:
+            raise serializers.ValidationError("Jawaban wajib diisi.")
+        return value

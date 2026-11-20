@@ -171,7 +171,6 @@ def add_faq(request):
         messages.error(request, "Pertanyaan dan jawaban wajib diisi.")
         return redirect('main:kelola_faq')
     
-
     FAQ.objects.create (
         question=question,
         answer=answer,

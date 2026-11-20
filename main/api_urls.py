@@ -21,4 +21,10 @@ urlpatterns = [
     path("weather/locations/", api_views.weather_location_list, name="weather-location-list"),
     path("weather/locations/<int:location_id>/", api_views.weather_location_detail, name="weather-location-detail"),
     path("weather/locations/<int:location_id>/activate/", api_views.weather_location_activate, name="weather-location-activate"),
+
+    path("admin/dashboard/", api_views.admin_dashboard_summary, name="admin-dashboard"),
+    path("admin/users/", api_views.admin_user_list, name="admin-user-list"),
+    path("admin/users/<int:user_id>/", api_views.admin_user_delete, name="admin-user-delete"),
+    path("admin/faq/", api_views.admin_faq_list, name="admin-faq-list"),
+    path("admin/faq/<int:faq_id>/", api_views.admin_faq_detail, name="admin-faq-detail"),
 ]

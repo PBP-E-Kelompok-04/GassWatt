@@ -6,6 +6,8 @@ from rest_framework.decorators import (
 )
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
+from django.contrib.auth.models import User
+from django.db.models import Sum, Max
 
 from main.views.view_dashboard import (
     _sync_daily_emission_logs,
@@ -27,7 +29,9 @@ from main.serializers import (
     ElectricitySurveySerializer,
     ReusableSurveySerializer,
     FAQSerializer,
-    SavedLocationSerializer
+    SavedLocationSerializer,
+    AdminUserSerializer,
+    AdminFAQSerializer,
 )
 
 from main.weather_logic import WeatherServiceError, search_locations, get_weather
@@ -540,3 +544,154 @@ def weather_location_activate(request, location_id):
     location.is_active = True
     location.save(update_fields=["is_active"])
     return Response({"status": "success", "location": SavedLocationSerializer(location).data})
+
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def admin_dashboard_summary(request):
+    if not request.user.is_superuser:
+        return Response(
+            {"status": "error", "message": "Akses ditolak. Khusus Admin."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    total_users = User.objects.count()
+    active_users = User.objects.filter(is_active=True).count()
+    total_faqs = FAQ.objects.count()
+
+    transport_co2 = TransportationSurvey.objects.aggregate(total=Sum("daily_emission_co2"))["total"] or 0.0
+    electricity_co2 = ElectricitySurvey.objects.aggregate(total=Sum("daily_emission_co2"))["total"] or 0.0
+    reusable_co2 = ReusableItemSurvey.objects.aggregate(total=Sum("daily_emission_co2"))["total"] or 0.0
+    total_emission = round(transport_co2 + electricity_co2 + reusable_co2, 2)
+
+    return Response({
+        "status": "success",
+        "metrics": {
+            "total_users": total_users,
+            "active_users": active_users,
+            "total_faqs": total_faqs,
+            "total_emission_co2": total_emission,
+            "breakdown": {
+                "transportation": round(transport_co2, 2),
+                "electricity": round(electricity_co2, 2),
+                "reusable": round(reusable_co2, 2),
+            },
+        },
+    })
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def admin_user_list(request):
+    if not request.user.is_superuser:
+        return Response(
+            {"status": "error", "message": "Akses ditolak. Khusus Admin."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    query = request.query_params.get("q", "").strip()
+    users = User.objects.all().order_by("-date_joined")
+    if query:
+        users = users.filter(username__icontains=query) | users.filter(email__icontains=query)
+
+    serializer = AdminUserSerializer(users, many=True)
+    return Response({"status": "success", "data": serializer.data})
+
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def admin_user_delete(request, user_id):
+    if not request.user.is_superuser:
+        return Response(
+            {"status": "error", "message": "Akses ditolak. Khusus Admin."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    if request.user.id == user_id:
+        return Response(
+            {"status": "error", "message": "Tidak dapat menghapus akun sendiri."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    target_user = get_object_or_404(User, id=user_id)
+    target_user.delete()
+    return Response(
+        {"status": "success", "message": "Pengguna berhasil dihapus."},
+        status=status.HTTP_200_OK,
+    )
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def admin_faq_list(request):
+    if not request.user.is_superuser:
+        return Response(
+            {"status": "error", "message": "Akses ditolak. Khusus Admin."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    if request.method == "GET":
+        faqs = FAQ.objects.all().order_by("order")
+        serializer = AdminFAQSerializer(faqs, many=True)
+        return Response({"status": "success", "data": serializer.data})
+
+    serializer = AdminFAQSerializer(data=request.data)
+    if serializer.is_valid():
+        max_order = FAQ.objects.aggregate(max_val=Max("order"))["max_val"] or 0
+        serializer.save(order=max_order + 1, is_active=True)
+        return Response(
+            {
+                "status": "success",
+                "message": "FAQ berhasil ditambahkan.",
+                "data": serializer.data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+    return Response(
+        {"status": "error", "errors": serializer.errors},
+        status=status.HTTP_400_BAD_REQUEST,
+    )
+
+
+@api_view(["GET", "PUT", "PATCH", "DELETE"])
+@permission_classes([IsAuthenticated])
+def admin_faq_detail(request, faq_id):
+    if not request.user.is_superuser:
+        return Response(
+            {"status": "error", "message": "Akses ditolak. Khusus Admin."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    faq = get_object_or_404(FAQ, id=faq_id)
+
+    if request.method == "GET":
+        serializer = AdminFAQSerializer(faq)
+        return Response({"status": "success", "data": serializer.data})
+
+    if request.method in ("PUT", "PATCH"):
+        serializer = AdminFAQSerializer(
+            faq, data=request.data, partial=(request.method == "PATCH")
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {
+                    "status": "success",
+                    "message": "FAQ berhasil diperbarui.",
+                    "data": serializer.data,
+                },
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            {"status": "error", "errors": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if request.method == "DELETE":
+        faq.delete()
+        return Response(
+            {"status": "success", "message": "FAQ berhasil dihapus."},
+            status=status.HTTP_200_OK,
+        )

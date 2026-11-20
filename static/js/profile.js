@@ -25,10 +25,21 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    async function post(url, formData) {
+    // API errors look like {errors: {field: [msgs]}} or {detail: "..."}; flatten to a list
+    function errorMessages(data, fallback) {
+        const out = [];
+        if (data && data.errors) {
+            Object.values(data.errors).forEach(v => out.push(...(Array.isArray(v) ? v : [v])));
+        }
+        if (data && data.error) out.push(data.error);
+        if (data && data.detail) out.push(data.detail);
+        return out.length ? out : [fallback];
+    }
+
+    async function send(method, url, formData) {
         try {
             const res = await fetch(url, {
-                method: "POST",
+                method: method,
                 headers: { "X-CSRFToken": csrf, "X-Requested-With": "XMLHttpRequest" },
                 body: formData,
                 credentials: "same-origin",
@@ -62,16 +73,18 @@ document.addEventListener("DOMContentLoaded", () => {
         const fd = new FormData();
         fd.append("pfp", file);
         wrapper.style.opacity = ".6";
-        const data = await post(urls.avatar, fd);
+        const data = await send("PATCH", urls.avatar, fd);
         wrapper.style.opacity = "";
         input.value = "";
 
         if (data.ok) {
-        const imageUrl = data.url + "?t=" + Date.now();
-        document.querySelectorAll(".profile-avatar").forEach(img => {
-            img.src = imageUrl;
-        });
-        showMessage(avatarMsg, true, data.message);
+            // server already adds ?v=<timestamp> for cache busting
+            document.querySelectorAll(".profile-avatar").forEach(img => {
+                img.src = data.url;
+            });
+            showMessage(avatarMsg, true, data.message);
+        } else {
+            showMessage(avatarMsg, false, errorMessages(data, "Gagal mengubah foto profil."));
         }
     });
 
@@ -83,14 +96,14 @@ document.addEventListener("DOMContentLoaded", () => {
         e.preventDefault();
         const btn = usernameForm.querySelector("button");
         btn.disabled = true;
-        const data = await post(urls.username, new FormData(usernameForm));
+        const data = await send("PATCH", urls.username, new FormData(usernameForm));
         btn.disabled = false;
 
         if (data.ok) {
             document.querySelectorAll(".user-name").forEach(el => el.textContent = data.username);
             showMessage(usernameMsg, true, data.message);
         } else {
-            showMessage(usernameMsg, false, data.error || "Gagal mengubah username.");
+            showMessage(usernameMsg, false, errorMessages(data, "Gagal mengubah username."));
         }
     });
 
@@ -102,14 +115,14 @@ document.addEventListener("DOMContentLoaded", () => {
         e.preventDefault();
         const btn = passwordForm.querySelector("button");
         btn.disabled = true;
-        const data = await post(urls.password, new FormData(passwordForm));
+        const data = await send("PUT", urls.password, new FormData(passwordForm));
         btn.disabled = false;
 
         if (data.ok) {
             passwordForm.reset();
             showMessage(passwordMsg, true, data.message);
         } else {
-            showMessage(passwordMsg, false, data.errors || data.error || "Gagal mengubah password.");
+            showMessage(passwordMsg, false, errorMessages(data, "Gagal mengubah password."));
         }
     });
 });

@@ -117,17 +117,17 @@ class SavedLocationSerializer(serializers.ModelSerializer):
             'id', 'is_active', 'created_at'
         ]
 
-        def validate_name(self, value):
-            value = strip_tags(value).strip()
-            if not value:
-                raise serializers.ValidationError('Nama lokasi wajib diisi.')
-            return value
+    def validate_name(self, value):
+        value = strip_tags(value).strip()
+        if not value:
+            raise serializers.ValidationError('Nama lokasi wajib diisi.')
+        return value
 
-        def validate_latitude(self, value):
-            return round(value, 6)
+    def validate_latitude(self, value):
+        return round(value, 6)
 
-        def validate_longitude(self, value):
-            return round(value, 6)
+    def validate_longitude(self, value):
+        return round(value, 6)
 
 
 class AdminUserSerializer(serializers.ModelSerializer):

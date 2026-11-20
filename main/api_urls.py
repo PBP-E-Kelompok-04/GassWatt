@@ -27,4 +27,10 @@ urlpatterns = [
     path("admin/users/<int:user_id>/", api_views.admin_user_delete, name="admin-user-delete"),
     path("admin/faq/", api_views.admin_faq_list, name="admin-faq-list"),
     path("admin/faq/<int:faq_id>/", api_views.admin_faq_detail, name="admin-faq-detail"),
+
+    path("sessions/", views.SessionAPI.as_view(), name="sessions"),            # POST login, DELETE logout
+    path("users/", views.UsersAPI.as_view(), name="users"),                    # POST register
+    path("users/me/", views.MeAPI.as_view(), name="me"),                       # GET, PATCH, DELETE
+    path("users/me/password/", views.PasswordAPI.as_view(), name="password"),  # PUT
+    path("validate-field/", views.ValidateFieldAPI.as_view(), name="validate_field"),
 ]

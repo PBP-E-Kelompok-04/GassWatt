@@ -281,6 +281,8 @@
 				);
 			} else if (data && data.errors) {
 				showErrors(form, data.errors);
+			} else if (data && data.detail) {
+				showErrors(form, { __all__: [data.detail] });
 			} else {
 				showErrors(form, { __all__: [GENERIC_ERROR] });
 			}

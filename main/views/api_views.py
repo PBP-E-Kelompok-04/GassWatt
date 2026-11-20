@@ -12,7 +12,12 @@ from main.views.view_dashboard import (
     get_emission_dashboard_data,
     get_weekly_target_summary,
 )
-from main.models import TransportationSurvey
+from main.models import (
+    TransportationSurvey,
+    ElectricitySurvey,
+    ReusableItemSurvey,
+    FAQ,
+)
 # from main.permissions import IsPortfolioOwnerOrReadOnly
 from main.serializers import (
     TransportationSurveySerializer,

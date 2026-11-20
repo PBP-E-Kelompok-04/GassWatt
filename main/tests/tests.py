@@ -50,6 +50,24 @@ class TransportationSurveyFlowTests(TestCase):
         self.assertContains(response, 'name="daily_distance_km"')
         self.assertContains(response, 'data-list-url="/dashboard/survey/transport/list/"')
 
+    def test_emission_chart_api_returns_last_seven_days(self):
+        today = timezone.now().date()
+        for days_ago in range(6, -1, -1):
+            DailyEmissionLog.objects.create(
+                user=self.user,
+                date=today - timedelta(days=days_ago),
+                total_emission_co2=days_ago,
+            )
+
+        with patch("main.views.api_views._sync_daily_emission_logs"):
+            response = self.client.get(reverse("api:emission-chart"))
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["status"], "success")
+        self.assertEqual(len(data["labels"]), 7)
+        self.assertEqual(data["datasets"][0]["data"], [6, 5, 4, 3, 2, 1, 0])
+
     def test_transport_survey_crud_and_list(self):
         add_response = self.client.post(
             reverse("main:add_transport_survey"),
@@ -210,6 +228,28 @@ class EmissionDashboardTests(TestCase):
         self.assertEqual(response.context["electricity_emission_today"], 0)
         self.assertEqual(response.context["reusable_emission_saved_today"], 0)
 
+    def test_emission_dashboard_api_returns_same_metrics_as_page(self):
+        page_response = self.client.get(self.url)
+        api_response = self.client.get(reverse("api:emission-dashboard"))
+
+        self.assertEqual(api_response.status_code, 200)
+        api_data = api_response.json()
+        self.assertEqual(api_data["status"], "success")
+
+        metric_keys = (
+            "today_emission",
+            "total_7days_emission",
+            "co2_saved",
+            "eco_score",
+            "trees_saved",
+            "avoided_km",
+            "transport_emission_today",
+            "electricity_emission_today",
+            "reusable_emission_saved_today",
+        )
+        for key in metric_keys:
+            self.assertEqual(api_data[key], page_response.context[key])
+
     def test_dashboard_calculates_emissions_savings_score_and_impacts(self):
         DailyEmissionLog.objects.create(
             user=self.user,
@@ -315,6 +355,14 @@ class WeeklyTargetTests(TestCase):
             for days_ago in range(start_days_ago, end_days_ago - 1, -1)
         ])
 
+    def get_weekly_target(self):
+        response = self.client.get(reverse("api:weekly-target"))
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["status"], "success")
+        return data["data"]
+
     def test_weekly_target_compares_two_exact_seven_day_periods(self):
         self.create_week_logs(13, 7, 10)
         self.create_week_logs(6, 0, 8)
@@ -331,6 +379,16 @@ class WeeklyTargetTests(TestCase):
         self.assertTrue(target["is_achieved"])
         self.assertTrue(target["has_baseline"])
 
+    def test_weekly_target_api_returns_summary(self):
+        self.create_week_logs(13, 7, 10)
+        self.create_week_logs(6, 0, 8)
+
+        page_response = self.client.get(reverse("main:show_dashboard"))
+        api_target = self.get_weekly_target()
+
+        self.assertEqual(page_response.status_code, 200)
+        self.assertEqual(api_target, page_response.context["target_data"])
+
     def test_dashboard_updates_target_after_survey_edit(self):
         self.create_week_logs(13, 7, 1)
         self.create_week_logs(6, 0, 1)
@@ -341,6 +399,7 @@ class WeeklyTargetTests(TestCase):
         )
 
         before_edit = self.client.get(reverse("main:show_dashboard"))
+        self.assertEqual(before_edit.status_code, 200)
         before_progress = before_edit.context["target_data"]["actual_reduction_pct"]
 
         edit_response = self.client.post(
@@ -354,6 +413,7 @@ class WeeklyTargetTests(TestCase):
         self.assertEqual(edit_response.status_code, 200)
 
         after_edit = self.client.get(reverse("main:show_dashboard"))
+        self.assertEqual(after_edit.status_code, 200)
         after_progress = after_edit.context["target_data"]["actual_reduction_pct"]
 
         self.assertLess(after_progress, before_progress)
@@ -376,15 +436,29 @@ class MainDashboardTests(TestCase):
             for days_ago in range(start_days_ago, end_days_ago - 1, -1)
         ])
 
+    def get_recommendations(self):
+        response = self.client.get(reverse("api:recommendations"))
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["status"], "success")
+        return data["data"]
+
     def test_dashboard_explains_missing_weekly_baseline(self):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertFalse(response.context["target_data"]["has_baseline"])
-        self.assertEqual(response.context["target_data"]["actual_reduction_pct"], 0)
+        target = response.context["target_data"]
+        self.assertFalse(target["has_baseline"])
+        self.assertEqual(target["actual_reduction_pct"], 0)
+        self.assertContains(response, "Menunggu data minggu lalu")
+        self.assertNotContains(response, "weekly-target")
+        self.assertNotContains(response, "dashboard-weekly-target.js")
+        self.assertContains(response, 'data-api-url="/api/v1/recommendations/"')
+        self.assertContains(response, "js/dashboard-recommendations.js")
         self.assertIn(
             "Belum ada data emisi minggu lalu",
-            response.context["recommendations"][0],
+            self.get_recommendations()[0],
         )
 
     def test_dashboard_reports_achieved_weekly_target(self):
@@ -392,12 +466,13 @@ class MainDashboardTests(TestCase):
         self.create_week(6, 0, 10)
 
         response = self.client.get(self.url)
+        target = response.context["target_data"]
 
-        self.assertTrue(response.context["target_data"]["has_baseline"])
-        self.assertTrue(response.context["target_data"]["is_achieved"])
+        self.assertTrue(target["has_baseline"])
+        self.assertTrue(target["is_achieved"])
         self.assertIn(
             "Target minggu ini telah tercapai",
-            response.context["recommendations"][0],
+            self.get_recommendations()[0],
         )
 
     def test_dashboard_reports_partial_and_negative_weekly_reduction(self):
@@ -410,28 +485,32 @@ class MainDashboardTests(TestCase):
             daily_distance_km=72.22,
         )
         partial_response = self.client.get(self.url)
+        partial_target = partial_response.context["target_data"]
 
+        self.assertEqual(partial_response.status_code, 200)
         self.assertAlmostEqual(
-            partial_response.context["target_data"]["actual_reduction_pct"],
+            partial_target["actual_reduction_pct"],
             5,
         )
         self.assertIn(
             "Sedikit lagi!",
-            partial_response.context["recommendations"][0],
+            self.get_recommendations()[0],
         )
 
         survey = TransportationSurvey.objects.get(user=self.user)
         survey.daily_distance_km = 122.23
         survey.save()
         higher_emission_response = self.client.get(self.url)
+        higher_emission_target = higher_emission_response.context["target_data"]
 
+        self.assertEqual(higher_emission_response.status_code, 200)
         self.assertLess(
-            higher_emission_response.context["target_data"]["actual_reduction_pct"],
+            higher_emission_target["actual_reduction_pct"],
             0,
         )
         self.assertIn(
             "Emisi masih lebih tinggi dari minggu lalu",
-            higher_emission_response.context["recommendations"][0],
+            self.get_recommendations()[0],
         )
 
     def test_dashboard_recommends_actions_from_transport_energy_and_reusable_surveys(self):
@@ -492,7 +571,7 @@ class MainDashboardTests(TestCase):
         )
 
         response = self.client.get(self.url)
-        recommendations = response.context["recommendations"]
+        recommendations = self.get_recommendations()
 
         self.assertEqual(response.status_code, 200)
         for expected_text in (
@@ -537,7 +616,7 @@ class MainDashboardTests(TestCase):
         )
 
         response = self.client.get(self.url)
-        recommendations = response.context["recommendations"]
+        recommendations = self.get_recommendations()
 
         self.assertFalse(any("tergolong dekat" in item for item in recommendations))
         self.assertFalse(any("Penggunaan AC" in item for item in recommendations))

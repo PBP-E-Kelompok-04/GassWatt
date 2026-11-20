@@ -48,23 +48,28 @@ function setStatus(message, type = "info") {
 }
 
 async function readJson(response) {
+    if (response.status === 204) return null;
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-        const details = data.error ||
-            (data.errors ? Object.values(data.errors).flat().join(" ") : "Permintaan gagal.");
+        const details = data.error || data.detail ||
+            (data.errors ? Object.values(data.errors).flat().join(" ") :
+            Object.values(data).flat().filter(value => typeof value === "string").join(" ")) ||
+            "Permintaan gagal.";
         throw new Error(details);
     }
     return data;
 }
 
-async function postForm(url, fields = {}) {
-    const body = new FormData();
-    for (const [key, value] of Object.entries(fields)) body.append(key, value);
+async function writeWeather(url, method, fields) {
     return readJson(await fetch(url, {
-        method: "POST",
+        method,
         credentials: "same-origin",
-        headers: { "X-CSRFToken": csrfToken() },
-        body,
+        headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrfToken(),
+        },
+        body: fields === undefined ? undefined : JSON.stringify(fields),
     }));
 }
 
@@ -402,7 +407,7 @@ async function saveCurrentLocation() {
     const location = { ...currentSelected };
     el("btn-save").disabled = true;
     try {
-        const result = await postForm(urls.save, {
+        const result = await writeWeather(urls.save, "POST", {
             name: location.name,
             latitude: location.latitude,
             longitude: location.longitude,
@@ -422,7 +427,7 @@ async function saveCurrentLocation() {
 
 async function activateSavedLocation(loc) {
     try {
-        await postForm(urlForId(urls.activate, loc.id));
+        await writeWeather(urlForId(urls.activate, loc.id), "POST");
         await loadSavedLocations();
         selectLocation({ ...loc, is_active: true });
     } catch (error) {
@@ -511,7 +516,7 @@ async function submitRenameModal(event) {
     modalPending = true;
     showModalError("weatherRenameError", "");
     try {
-        const result = await postForm(urlForId(urls.update, location.id), { name: newName });
+        const result = await writeWeather(urlForId(urls.update, location.id), "PATCH", { name: newName });
         if (currentSelected?.savedId === location.id) {
             currentSelected.name = result.location.name;
             el("display-location-name").textContent = currentSelected.name;
@@ -539,7 +544,7 @@ async function confirmDeleteModal() {
     modalPending = true;
     showModalError("weatherDeleteError", "");
     try {
-        await postForm(urlForId(urls.delete, location.id));
+        await writeWeather(urlForId(urls.delete, location.id), "DELETE");
         if (currentSelected?.savedId === location.id) {
             currentSelected = null;
             el("search-location-input").value = "";

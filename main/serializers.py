@@ -1,0 +1,177 @@
+from django.utils.html import strip_tags
+from rest_framework import serializers
+from django.contrib.auth.models import User
+
+from main.models import TransportationSurvey, ElectricitySurvey, ReusableItemSurvey, FAQ, SavedLocation
+
+
+class TransportationSurveySerializer(serializers.ModelSerializer):
+    transport_mode_display = serializers.CharField(
+        source="get_transport_mode_display",
+        read_only=True,
+    )
+
+    class Meta:
+        model = TransportationSurvey
+        fields = [
+            "id",
+            "user",
+            "transport_mode",
+            "transport_mode_display",
+            "daily_distance_km",
+            "notes",
+            "daily_emission_co2",
+            "created_at",
+        ]
+        read_only_fields = [
+            "id",
+            "user",
+            "daily_emission_co2",
+            "created_at",
+        ]
+
+    def validate_notes(self, value):
+        return strip_tags(value) if value else value
+
+class ElectricitySurveySerializer(serializers.ModelSerializer):
+    device_type_display = serializers.CharField(
+        source="get_device_type_display",
+        read_only=True,
+    )
+
+    class Meta:
+        model = ElectricitySurvey
+        fields = [
+            "id",
+            "user",
+            "device_type",
+            "device_type_display",
+            "device_name",
+            "quantity",
+            "power_watts",
+            "daily_usage_hours",
+            "notes",
+            "daily_emission_co2",
+            "daily_consumption_kwh",
+            "created_at",
+        ]
+        read_only_fields = [
+            "id",
+            "user",
+            "daily_consumption_kwh",
+            "daily_emission_co2",
+            "created_at",
+        ]
+    
+    def validate_notes(self, value):
+        return strip_tags(value) if value else value
+
+class ReusableSurveySerializer(serializers.ModelSerializer):
+    item_type_display = serializers.CharField(
+        source="get_item_type_display",
+        read_only=True,
+    )
+
+    class Meta:
+        model = ReusableItemSurvey
+        fields = [
+            "id",
+            "user",
+            "item_type",
+            "item_type_display",
+            "quantity",
+            "uses_per_week",
+            "notes",
+            "daily_emission_co2",
+            "created_at",
+        ]
+        read_only_fields = [
+            "id",
+            "user",
+            "daily_emission_co2",
+            "created_at",
+        ]
+    
+    def validate_notes(self, value):
+        return strip_tags(value) if value else value
+
+class FAQSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FAQ
+        fields = [
+            "id",
+            "question",
+            "answer",
+            "order",
+        ]
+        read_only_fields = fields
+
+class SavedLocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SavedLocation
+        fields = [
+            'id', 'name', 'latitude', 'longitude', 
+            'is_active', 'created_at'
+        ]
+        read_only_fields = [
+            'id', 'is_active', 'created_at'
+        ]
+
+    def validate_name(self, value):
+        value = strip_tags(value).strip()
+        if not value:
+            raise serializers.ValidationError('Nama lokasi wajib diisi.')
+        return value
+
+    def validate_latitude(self, value):
+        return round(value, 6)
+
+    def validate_longitude(self, value):
+        return round(value, 6)
+
+
+class AdminUserSerializer(serializers.ModelSerializer):
+    role = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "username",
+            "email",
+            "is_active",
+            "is_superuser",
+            "role",
+            "date_joined",
+        ]
+        read_only_fields = fields
+
+    def get_role(self, obj):
+        return "Admin" if obj.is_superuser or obj.is_staff else "Pengguna"
+
+
+class AdminFAQSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FAQ
+        fields = [
+            "id",
+            "question",
+            "answer",
+            "order",
+            "is_active",
+        ]
+        read_only_fields = ["id"]
+
+    def validate_question(self, value):
+        value = strip_tags(value).strip()
+        if not value:
+            raise serializers.ValidationError("Pertanyaan wajib diisi.")
+        if len(value) > 250:
+            raise serializers.ValidationError("Pertanyaan maksimal 250 karakter.")
+        return value
+
+    def validate_answer(self, value):
+        value = strip_tags(value).strip()
+        if not value:
+            raise serializers.ValidationError("Jawaban wajib diisi.")
+        return value

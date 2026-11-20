@@ -208,7 +208,10 @@
     data-list-url="{% url 'main:survey_transport_list_json' %}"
     data-add-url="{% url 'main:add_transport_survey' %}"
     data-edit-url-template="{% url 'main:edit_transport_survey' '00000000-0000-0000-0000-000000000000' %}"
-    data-delete-url-template="{% url 'main:delete_transport_survey' '00000000-0000-0000-0000-000000000000' %}">
+    data-delete-url-template="{% url 'main:delete_transport_survey' '00000000-0000-0000-0000-000000000000' %}"
+    data-api-list-url="{% url 'api:transportation-list' %}"
+    data-api-edit-url-template="{% url 'api:transportation-detail' '00000000-0000-0000-0000-000000000000' %}"
+    data-api-delete-url-template="{% url 'api:transportation-detail' '00000000-0000-0000-0000-000000000000' %}">
 </div>
 <div id="electricityConfig"
     data-list-url="{% url 'main:survey_electricity_list_json' %}"
@@ -222,6 +225,7 @@
     data-edit-url-template="{% url 'main:edit_reusable_survey' '00000000-0000-0000-0000-000000000000' %}"
     data-delete-url-template="{% url 'main:delete_reusable_survey' '00000000-0000-0000-0000-000000000000' %}">
 </div>
+{% csrf_token %}
 <script src="{% static 'js/survey-ajax.js' %}"></script>
 <script src="{% static 'js/survey-electricity.js' %}"></script>
 <script src="{% static 'js/survey-reusable.js' %}"></script>
